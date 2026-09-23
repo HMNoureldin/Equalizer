@@ -12,6 +12,7 @@ endif()
 
 # Shared audio processing library.
 add_library(equalizer_core STATIC
+    src/Biquad.cpp
     src/Equalizer.cpp
     src/Logger.cpp
     src/RawPcmFile.cpp
