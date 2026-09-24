@@ -40,38 +40,34 @@ void setLevel(Level level);
  * @note Logging and level changes are not synchronized
  * across threads.
  */
-void log(Level level, std::string_view message,
-         std::string_view file, int line);
+void log(Level level, std::string_view message, std::string_view file,
+         int line);
 } // namespace Logger
 
 /**
  * @brief Log a DEBUG message if enabled.
  * @param message Text to log.
  */
-#define LOG_DEBUG(message)                                 \
-    ::Logger::log(::Logger::Level::Debug, (message),       \
-                  __FILE__, __LINE__)
+#define LOG_DEBUG(message)                                                     \
+    ::Logger::log(::Logger::Level::Debug, (message), __FILE__, __LINE__)
 
 /**
  * @brief Log a INFO message if enabled.
  * @param message Text to log.
  */
-#define LOG_INFO(message)                                  \
-    ::Logger::log(::Logger::Level::Info, (message),        \
-                  __FILE__, __LINE__)
+#define LOG_INFO(message)                                                      \
+    ::Logger::log(::Logger::Level::Info, (message), __FILE__, __LINE__)
 
 /**
  * @brief Log a WARN message if enabled.
  * @param message Text to log.
  */
-#define LOG_WARN(message)                                  \
-    ::Logger::log(::Logger::Level::Warn, (message),        \
-                  __FILE__, __LINE__)
+#define LOG_WARN(message)                                                      \
+    ::Logger::log(::Logger::Level::Warn, (message), __FILE__, __LINE__)
 
 /**
  * @brief Log a ERROR message if enabled.
  * @param message Text to log.
  */
-#define LOG_ERROR(message)                                 \
-    ::Logger::log(::Logger::Level::Error, (message),       \
-                  __FILE__, __LINE__)
+#define LOG_ERROR(message)                                                     \
+    ::Logger::log(::Logger::Level::Error, (message), __FILE__, __LINE__)

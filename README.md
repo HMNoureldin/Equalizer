@@ -7,6 +7,14 @@ A C++17 command-line application for applying gain at **1 kHz** and **2 kHz** to
 
 > **Development status:** Argument parsing, gain validation, logging, and build tooling are implemented. Audio processing and output-file generation are not implemented yet.
 
+## Audio format
+
+Input and output use headerless signed 16-bit little-endian PCM, mono,
+at 48 kHz. Byte order is encoded explicitly, independently of the host.
+A final short block of complete samples is processed normally. An odd
+file length (a trailing incomplete sample) is rejected with an error;
+an error can leave a partial output file.
+
 ## Requirements
 
 - A C++17-compatible compiler

@@ -10,12 +10,10 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# Shared audio processing library.
+# Reusable DSP library, independent of CLI, file I/O, and logging.
 add_library(equalizer_core STATIC
     src/Biquad.cpp
     src/Equalizer.cpp
-    src/Logger.cpp
-    src/RawPcmFile.cpp
 )
 
 target_include_directories(equalizer_core PUBLIC
@@ -23,15 +21,21 @@ target_include_directories(equalizer_core PUBLIC
 )
 target_compile_features(equalizer_core PUBLIC cxx_std_17)
 
-# Application.
-add_executable(equalizer src/main.cpp src/CommandLine.cpp)
+# Application and file adapters depend on the DSP core.
+add_executable(equalizer
+    src/main.cpp
+    src/CommandLine.cpp
+    src/PcmConversion.cpp
+    src/RawPcmFile.cpp
+    src/Logger.cpp
+)
 target_link_libraries(equalizer PRIVATE equalizer_core)
 
 # Tests (disable with -DBUILD_TESTING=OFF).
 include(CTest)
 
 if(BUILD_TESTING)
-    add_executable(equalizer_tests test/EqualizerTests.cpp src/CommandLine.cpp)
+    add_executable(equalizer_tests test/EqualizerTests.cpp)
     target_link_libraries(equalizer_tests PRIVATE equalizer_core)
-    add_test(NAME EqualizerTests COMMAND equalizer_tests)
+    add_test(NAME EqualizerZeroGain COMMAND equalizer_tests)
 endif()
