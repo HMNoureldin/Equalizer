@@ -6,6 +6,9 @@
 
 #pragma once
 
+/// Reusable audio equalizer processing components.
+namespace audioeq
+{
 /// Peaking biquad filter.
 class Biquad
 {
@@ -25,8 +28,7 @@ class Biquad
      * (0, sampleRateHz / 2).
      * @note Invalid input leaves the filter unchanged.
      */
-    void configurePeaking(float sampleRateHz,
-                          float frequencyHz, float q,
+    void configurePeaking(float sampleRateHz, float frequencyHz, float q,
                           float gainDb);
 
     /**
@@ -56,3 +58,4 @@ class Biquad
     /// Second state value.
     float z2_{0.0f};
 };
+} // namespace audioeq

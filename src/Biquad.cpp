@@ -13,6 +13,8 @@
 #include <cmath>
 #include <stdexcept>
 
+namespace audioeq
+{
 namespace
 {
 /// Pi for angular-frequency calculation
@@ -27,25 +29,20 @@ constexpr float kPi = 3.14159265358979323846f;
  * @throws std::invalid_argument For nonfinite values or
  * values outside the ranges above.
  */
-void validateParameters(float sampleRateHz,
-                        float frequencyHz, float q,
+void validateParameters(float sampleRateHz, float frequencyHz, float q,
                         float gainDb)
 {
-    if (!std::isfinite(sampleRateHz) ||
-        !std::isfinite(frequencyHz) || !std::isfinite(q) ||
-        !std::isfinite(gainDb)) {
-        throw std::invalid_argument(
-            "Filter parameters must be finite.");
+    if (!std::isfinite(sampleRateHz) || !std::isfinite(frequencyHz) ||
+        !std::isfinite(q) || !std::isfinite(gainDb)) {
+        throw std::invalid_argument("Filter parameters must be finite.");
     }
     if (sampleRateHz <= 0.0f) {
-        throw std::invalid_argument(
-            "Sample rate must be positive.");
+        throw std::invalid_argument("Sample rate must be positive.");
     }
     if (q <= 0.0f) {
         throw std::invalid_argument("Q must be positive.");
     }
-    if (frequencyHz <= 0.0f ||
-        frequencyHz >= sampleRateHz / 2.0f) {
+    if (frequencyHz <= 0.0f || frequencyHz >= sampleRateHz / 2.0f) {
         throw std::invalid_argument(
             "Frequency must be above 0 and below "
             "half the sample rate (Nyquist frequency).");
@@ -53,19 +50,16 @@ void validateParameters(float sampleRateHz,
 }
 } // namespace
 
-void Biquad::configurePeaking(float sampleRateHz,
-                              float frequencyHz, float q,
+void Biquad::configurePeaking(float sampleRateHz, float frequencyHz, float q,
                               float gainDb)
 {
-    validateParameters(sampleRateHz, frequencyHz, q,
-                       gainDb);
+    validateParameters(sampleRateHz, frequencyHz, q, gainDb);
 
     // Compute intermediate values.
     const float A = std::pow(10.0f, gainDb / 40.0f);
 
     // calculate the normalized angular frequency
-    const float omega =
-        2.0f * kPi * frequencyHz / sampleRateHz;
+    const float omega = 2.0f * kPi * frequencyHz / sampleRateHz;
 
     // calculate the alpha value for the filter
     const float alpha = std::sin(omega) / (2.0f * q);
@@ -109,3 +103,4 @@ void Biquad::reset() noexcept
     z1_ = 0.0f;
     z2_ = 0.0f;
 }
+} // namespace audioeq
