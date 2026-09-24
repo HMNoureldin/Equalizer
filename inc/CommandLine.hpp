@@ -1,32 +1,28 @@
 /**
  * @file
  * @author H.Noureldin <heshamnoureldin2017@gmail.com>
- * @brief Command-line options, gain limits, and argument
- * parsing API.
+ * @brief Command-line argument parsing.
  */
 
 #pragma once
 
 #include <string>
 
-/** @brief Parsing and validation of application arguments.
+/** @brief Command-line argument parsing and validation.
  */
 namespace CommandLine
 {
-/// Minimum accepted gain in decibels (inclusive).
-constexpr float kMinGainDb = -12.0f;
-/// Maximum accepted gain in decibels (inclusive).
-constexpr float kMaxGainDb = 12.0f;
-
 /** @brief Validated arguments; paths are stored without
  * checking file access. */
 struct ProgramOptions
 {
     /// Raw PCM input path.
     std::string inputPath;
-    /// Gain at 1 kHz in [-12, 12] dB; zero means unchanged.
+    /// Gain at 1 kHz in the core-supported dB range; zero
+    /// means unchanged.
     double gain1kHz;
-    /// Gain at 2 kHz in [-12, 12] dB; zero means unchanged.
+    /// Gain at 2 kHz in the core-supported dB range; zero
+    /// means unchanged.
     double gain2kHz;
     /// Intended processed PCM output path.
     std::string outputPath;
@@ -44,4 +40,5 @@ struct ProgramOptions
  * @note Does not open files or process audio.
  */
 ProgramOptions parseArguments(int argc, char* argv[]);
+
 } // namespace CommandLine
