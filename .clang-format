@@ -4,7 +4,7 @@ IndentWidth: 4
 TabWidth: 4
 UseTab: Never
 
-ColumnLimit: 60
+ColumnLimit: 80
 
 BreakBeforeBraces: Custom
 BraceWrapping:
