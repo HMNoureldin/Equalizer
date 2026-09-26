@@ -5,9 +5,10 @@ JOBS ?= 2
 ARGS ?=
 CLANG_FORMAT ?= clang-format-18
 DOXYGEN ?= doxygen
-FORMAT_FILES := $(wildcard inc/*.hpp src/*.cpp test/*.cpp)
+GTEST_COLOR ?= yes
+FORMAT_FILES := $(wildcard inc/*.hpp src/*.cpp test/*.cpp test/*.hpp)
 
-.PHONY: build build-tests test run clean format format-check docs show-docs help
+.PHONY: build build-tests test explore explore-q explore-latency run clean format format-check docs show-docs help
 
 # Keep builds with and without tests separate.
 build:
@@ -18,8 +19,31 @@ build-tests:
 	cmake -S . -B build/tests -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DBUILD_TESTING=ON
 	cmake --build build/tests --parallel $(JOBS)
 
+# Inherited by the build prerequisite and its nested Make processes.
+test: MAKEFLAGS += --no-print-directory
 test: build-tests
-	ctest --test-dir build/tests --output-on-failure
+	@cmake -E env GTEST_COLOR=$(GTEST_COLOR) ctest --test-dir build/tests --verbose --output-on-failure
+
+# Build only the requested exploration and its dependencies; do not run CTest.
+explore-q: MAKEFLAGS += --no-print-directory
+explore-q:
+	cmake -S . -B build/tests -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DBUILD_TESTING=ON
+	cmake --build build/tests --target equalizer_q_exploration --parallel $(JOBS)
+	@cmake -E env GTEST_COLOR=$(GTEST_COLOR) ./build/tests/equalizer_q_exploration
+
+# Run both explorations sequentially to avoid competing timing workloads.
+explore: MAKEFLAGS += --no-print-directory
+explore:
+	cmake -S . -B build/tests -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DBUILD_TESTING=ON
+	cmake --build build/tests --target equalizer_q_exploration equalizer_latency_exploration --parallel $(JOBS)
+	@cmake -E env GTEST_COLOR=$(GTEST_COLOR) ./build/tests/equalizer_q_exploration
+	@cmake -E env GTEST_COLOR=$(GTEST_COLOR) ./build/tests/equalizer_latency_exploration
+
+explore-latency: MAKEFLAGS += --no-print-directory
+explore-latency:
+	cmake -S . -B build/tests -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DBUILD_TESTING=ON
+	cmake --build build/tests --target equalizer_latency_exploration --parallel $(JOBS)
+	@cmake -E env GTEST_COLOR=$(GTEST_COLOR) ./build/tests/equalizer_latency_exploration
 
 run: build
 	./build/app/equalizer $(ARGS)
@@ -43,7 +67,10 @@ format-check:
 help:
 	@echo "make build        Build application without tests (default)"
 	@echo "make build-tests  Build application and tests"
-	@echo "make test         Build and run tests"
+	@echo "make test         Build and run tests with detailed GoogleTest output"
+	@echo "make explore      Run Q and latency explorations (use BUILD_TYPE=Release for timing)"
+	@echo "make explore-latency  Run the latency exploration only"
+	@echo "make explore-q    Build and run the Q exploration only"
 	@echo "make run          Build and run application (ARGS='...' optional)"
 	@echo "make clean        Remove build and generated documentation directories"
 	@echo "make docs         Generate Doxygen HTML documentation"

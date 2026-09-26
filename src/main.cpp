@@ -4,6 +4,7 @@
  * @brief Process mono 48 kHz signed 16-bit PCM audio.
  */
 
+#include "AudioConfig.hpp"
 #include "CommandLine.hpp"
 #include "Equalizer.hpp"
 #include "Logger.hpp"
@@ -20,8 +21,8 @@ namespace
 {
 /// Required input sample rate in Hz.
 constexpr float kSampleRateHz = 48000.0f;
-/// Samples processed per block.
-constexpr std::size_t kBlockSize = 1024;
+/// Samples per block: 5.33 ms at 48 kHz; selected after Release DSP timing.
+constexpr std::size_t kBlockSize = audioeq::kProcessingBlockSize;
 } // namespace
 
 /**
@@ -66,8 +67,9 @@ int main(int argc, char* argv[])
         // Validate settings before file opening can
         // truncate output.
         audioeq::Equalizer equalizer(
-            kSampleRateHz, {1000.0f, 2.0f, static_cast<float>(gain1kHz)},
-            {2000.0f, 2.0f, static_cast<float>(gain2kHz)});
+            kSampleRateHz,
+            {1000.0f, audioeq::kSelectedQ, static_cast<float>(gain1kHz)},
+            {2000.0f, audioeq::kSelectedQ, static_cast<float>(gain2kHz)});
 
         // -------------------------------------------------
         // 3. Open files

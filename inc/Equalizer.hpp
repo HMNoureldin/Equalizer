@@ -28,19 +28,15 @@ class Equalizer
     /// Maximum accepted gain in dB.
     static constexpr float kMaxGainDb = 12.0f;
 
-    /// Initial band configuration; frequency and Q stay
-    /// fixed.
+    /// Initial band configuration
     struct BandConfig
     {
         float frequencyHz;   ///< Center frequency in Hz.
-        float q;             ///< Positive quality factor; higher is
-                             ///< narrower.
-        float gainDb = 0.0f; ///< Initial gain within the
-                             ///< public gain limits.
+        float q;             ///< Positive quality factor.
+        float gainDb = 0.0f; ///< Initial gain.
     };
 
-    /// Identify a band by its position in the processing
-    /// chain.
+    /// Identify the band to update by its position in the filter cascade.
     enum class Band {
         First, ///< First filter in the cascade.
         Second ///< Second filter in the cascade.
