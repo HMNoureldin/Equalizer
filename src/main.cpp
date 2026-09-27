@@ -17,14 +17,6 @@
 #include <exception>
 #include <string>
 
-namespace
-{
-/// Required input sample rate in Hz.
-constexpr float kSampleRateHz = 48000.0f;
-/// Samples per block: 5.33 ms at 48 kHz; selected after Release DSP timing.
-constexpr std::size_t kBlockSize = audioeq::kProcessingBlockSize;
-} // namespace
-
 /**
  * @brief Parse arguments and process the input PCM file.
  * @param argc Argument count, including the executable
@@ -67,9 +59,11 @@ int main(int argc, char* argv[])
         // Validate settings before file opening can
         // truncate output.
         audioeq::Equalizer equalizer(
-            kSampleRateHz,
-            {1000.0f, audioeq::kSelectedQ, static_cast<float>(gain1kHz)},
-            {2000.0f, audioeq::kSelectedQ, static_cast<float>(gain2kHz)});
+            equalizer_app::config::kSampleRateHz,
+            {1000.0f, equalizer_app::config::kSelectedQ,
+             static_cast<float>(gain1kHz)},
+            {2000.0f, equalizer_app::config::kSelectedQ,
+             static_cast<float>(gain2kHz)});
 
         // -------------------------------------------------
         // 3. Open files
@@ -102,8 +96,10 @@ int main(int argc, char* argv[])
         // 4. Allocate buffers ONCE
         // -------------------------------------------------
 
-        std::array<std::int16_t, kBlockSize> pcmBuffer{};
-        std::array<float, kBlockSize> processingBuffer{};
+        std::array<std::int16_t, equalizer_app::config::kProcessingBlockSize>
+            pcmBuffer{};
+        std::array<float, equalizer_app::config::kProcessingBlockSize>
+            processingBuffer{};
 
         // -------------------------------------------------
         // 5. Streaming loop

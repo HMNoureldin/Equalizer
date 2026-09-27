@@ -7,6 +7,7 @@
 #pragma once
 
 #include <audioeq/Biquad.hpp>
+#include <audioeq/Config.hpp>
 
 #include <cstddef>
 
@@ -24,9 +25,9 @@ class Equalizer
 {
   public:
     /// Minimum accepted gain in dB.
-    static constexpr float kMinGainDb = -12.0f;
+    static constexpr float kMinGainDb = config::kMinGainDb;
     /// Maximum accepted gain in dB.
-    static constexpr float kMaxGainDb = 12.0f;
+    static constexpr float kMaxGainDb = config::kMaxGainDb;
 
     /// Initial band configuration
     struct BandConfig
