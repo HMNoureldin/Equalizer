@@ -30,9 +30,11 @@ namespace
  */
 float measureBandLeakage(float q, float toneHz, float otherBandGainDb)
 {
-    constexpr std::size_t sampleCount = 48000;
-    constexpr std::size_t blockSize = audioeq::kProcessingBlockSize;
-    constexpr std::size_t settlingSamples = 4800;
+    constexpr std::size_t sampleCount =
+        static_cast<std::size_t>(equalizer_app::config::kSampleRateHz);
+    constexpr std::size_t blockSize =
+        equalizer_app::config::kProcessingBlockSize;
+    constexpr std::size_t settlingSamples = sampleCount / 10;
 
     // Generate the tone that should remain unchanged.
     const auto input = testutils::generateSine(toneHz, 0.1f, sampleCount);
@@ -51,7 +53,7 @@ float measureBandLeakage(float q, float toneHz, float otherBandGainDb)
         gain1000Hz = otherBandGainDb;
     }
 
-    audioeq::Equalizer equalizer(testutils::kSampleRateHz,
+    audioeq::Equalizer equalizer(equalizer_app::config::kSampleRateHz,
                                  {1000.0f, q, gain1000Hz},
                                  {2000.0f, q, gain2000Hz});
 
@@ -84,9 +86,11 @@ float measureBandLeakage(float q, float toneHz, float otherBandGainDb)
  */
 float measureFrequencyChange(float toneHz, float centerHz, float gainDb)
 {
-    constexpr std::size_t sampleCount = 48000;
-    constexpr std::size_t blockSize = audioeq::kProcessingBlockSize;
-    constexpr std::size_t settlingSamples = 4800;
+    constexpr std::size_t sampleCount =
+        static_cast<std::size_t>(equalizer_app::config::kSampleRateHz);
+    constexpr std::size_t blockSize =
+        equalizer_app::config::kProcessingBlockSize;
+    constexpr std::size_t settlingSamples = sampleCount / 10;
 
     // Generate the frequency that we want to measure.
     const auto input = testutils::generateSine(toneHz, 0.1f, sampleCount);
@@ -105,9 +109,10 @@ float measureFrequencyChange(float toneHz, float centerHz, float gainDb)
         gain2000Hz = gainDb;
     }
 
-    audioeq::Equalizer equalizer(testutils::kSampleRateHz,
-                                 {1000.0f, audioeq::kSelectedQ, gain1000Hz},
-                                 {2000.0f, audioeq::kSelectedQ, gain2000Hz});
+    audioeq::Equalizer equalizer(
+        equalizer_app::config::kSampleRateHz,
+        {1000.0f, equalizer_app::config::kSelectedQ, gain1000Hz},
+        {2000.0f, equalizer_app::config::kSelectedQ, gain2000Hz});
 
     // Process the audio in blocks.
     for (std::size_t offset = 0; offset < sampleCount; offset += blockSize) {
@@ -137,7 +142,8 @@ TEST(EqualizerIsolation, Boost2kHzDoesNotAffect1kHz)
     constexpr float isolationLimitDb = 0.5f;
 
     const float leakageDb =
-        measureBandLeakage(audioeq::kSelectedQ, 1000.0f, 12.0f);
+        measureBandLeakage(equalizer_app::config::kSelectedQ, 1000.0f,
+                           audioeq::Equalizer::kMaxGainDb);
 
     EXPECT_LT(std::abs(leakageDb), isolationLimitDb);
 }
@@ -148,7 +154,8 @@ TEST(EqualizerIsolation, Cut2kHzDoesNotAffect1kHz)
     constexpr float isolationLimitDb = 0.5f;
 
     const float leakageDb =
-        measureBandLeakage(audioeq::kSelectedQ, 1000.0f, -12.0f);
+        measureBandLeakage(equalizer_app::config::kSelectedQ, 1000.0f,
+                           audioeq::Equalizer::kMinGainDb);
 
     EXPECT_LT(std::abs(leakageDb), isolationLimitDb);
 }
@@ -159,7 +166,8 @@ TEST(EqualizerIsolation, Boost1kHzDoesNotAffect2kHz)
     constexpr float isolationLimitDb = 0.5f;
 
     const float leakageDb =
-        measureBandLeakage(audioeq::kSelectedQ, 2000.0f, 12.0f);
+        measureBandLeakage(equalizer_app::config::kSelectedQ, 2000.0f,
+                           audioeq::Equalizer::kMaxGainDb);
 
     EXPECT_LT(std::abs(leakageDb), isolationLimitDb);
 }
@@ -170,7 +178,8 @@ TEST(EqualizerIsolation, Cut1kHzDoesNotAffect2kHz)
     constexpr float isolationLimitDb = 0.5f;
 
     const float leakageDb =
-        measureBandLeakage(audioeq::kSelectedQ, 2000.0f, -12.0f);
+        measureBandLeakage(equalizer_app::config::kSelectedQ, 2000.0f,
+                           audioeq::Equalizer::kMinGainDb);
 
     EXPECT_LT(std::abs(leakageDb), isolationLimitDb);
 }
@@ -195,15 +204,15 @@ TEST(EqualizerNeighborResponse, OneKHzBandDoesNotAffectDistantFrequencies)
     for (const float frequencyHz : frequencies) {
 
         // Test a +12 dB boost at 1 kHz.
-        const float boostChangeDb =
-            measureFrequencyChange(frequencyHz, 1000.0f, 12.0f);
+        const float boostChangeDb = measureFrequencyChange(
+            frequencyHz, 1000.0f, audioeq::Equalizer::kMaxGainDb);
 
         EXPECT_LT(std::abs(boostChangeDb), maximumChangeDb)
             << "Frequency: " << frequencyHz << " Hz";
 
         // Test a -12 dB cut at 1 kHz.
-        const float cutChangeDb =
-            measureFrequencyChange(frequencyHz, 1000.0f, -12.0f);
+        const float cutChangeDb = measureFrequencyChange(
+            frequencyHz, 1000.0f, audioeq::Equalizer::kMinGainDb);
 
         EXPECT_LT(std::abs(cutChangeDb), maximumChangeDb)
             << "Frequency: " << frequencyHz << " Hz";
@@ -226,15 +235,15 @@ TEST(EqualizerNeighborResponse, TwoKHzBandDoesNotAffectDistantFrequencies)
     for (const float frequencyHz : frequencies) {
 
         // Test a +12 dB boost at 2 kHz.
-        const float boostChangeDb =
-            measureFrequencyChange(frequencyHz, 2000.0f, 12.0f);
+        const float boostChangeDb = measureFrequencyChange(
+            frequencyHz, 2000.0f, audioeq::Equalizer::kMaxGainDb);
 
         EXPECT_LT(std::abs(boostChangeDb), maximumChangeDb)
             << "Frequency: " << frequencyHz << " Hz";
 
         // Test a -12 dB cut at 2 kHz.
-        const float cutChangeDb =
-            measureFrequencyChange(frequencyHz, 2000.0f, -12.0f);
+        const float cutChangeDb = measureFrequencyChange(
+            frequencyHz, 2000.0f, audioeq::Equalizer::kMinGainDb);
 
         EXPECT_LT(std::abs(cutChangeDb), maximumChangeDb)
             << "Frequency: " << frequencyHz << " Hz";

@@ -30,9 +30,10 @@ namespace
  */
 float measureBandLeakage(float q, float toneHz, float otherBandGainDb)
 {
-    constexpr std::size_t sampleCount = 48000;
+    constexpr std::size_t sampleCount =
+        static_cast<std::size_t>(equalizer_app::config::kSampleRateHz);
     constexpr std::size_t blockSize = 1024;
-    constexpr std::size_t settlingSamples = 4800;
+    constexpr std::size_t settlingSamples = sampleCount / 10;
 
     // Generate the tone that should remain unchanged.
     const auto input = testutils::generateSine(toneHz, 0.1f, sampleCount);
@@ -52,7 +53,7 @@ float measureBandLeakage(float q, float toneHz, float otherBandGainDb)
     }
 
     // Create the equalizer using the Q value being investigated.
-    audioeq::Equalizer equalizer(testutils::kSampleRateHz,
+    audioeq::Equalizer equalizer(equalizer_app::config::kSampleRateHz,
                                  {1000.0f, q, gain1000Hz},
                                  {2000.0f, q, gain2000Hz});
 

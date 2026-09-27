@@ -20,8 +20,8 @@ std::vector<float> generateSine(float frequencyHz, float amplitude,
     std::vector<float> samples(sampleCount);
 
     for (std::size_t n = 0; n < sampleCount; ++n) {
-        const float phase =
-            2.0f * kPi * frequencyHz * static_cast<float>(n) / kSampleRateHz;
+        const float phase = 2.0f * kPi * frequencyHz * static_cast<float>(n) /
+                            equalizer_app::config::kSampleRateHz;
 
         samples[n] = amplitude * std::sin(phase);
     }

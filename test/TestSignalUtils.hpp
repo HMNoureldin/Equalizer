@@ -4,15 +4,14 @@
  */
 #pragma once
 
+#include "AudioConfig.hpp"
+
 #include <cstddef>
 #include <vector>
 
 /// Signal utilities for tests; independent of GoogleTest and the DSP core.
 namespace testutils
 {
-/// Sample rate in Hz used by generated test signals.
-inline constexpr float kSampleRateHz = 48000.0f;
-
 /**
  * @brief Generate a sine wave at the test sample rate, starting at zero phase.
  * @param frequencyHz Tone frequency in Hz.

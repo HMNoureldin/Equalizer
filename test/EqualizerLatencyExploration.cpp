@@ -46,7 +46,7 @@ void reportLatency(std::size_t blockSize)
     // Calculate how much audio one block represents.
     const double bufferLatencyMs =
         static_cast<double>(blockSize) /
-        static_cast<double>(testutils::kSampleRateHz) * 1000.0;
+        static_cast<double>(equalizer_app::config::kSampleRateHz) * 1000.0;
 
     // Create a representative signal containing both EQ frequencies.
     auto buffer = testutils::generateSine(1000.0f, 0.1f, blockSize);
@@ -58,9 +58,10 @@ void reportLatency(std::size_t blockSize)
     }
 
     // Use non-zero gains so both EQ bands are active.
-    audioeq::Equalizer equalizer(testutils::kSampleRateHz,
-                                 {1000.0f, audioeq::kSelectedQ, 6.0f},
-                                 {2000.0f, audioeq::kSelectedQ, -3.0f});
+    audioeq::Equalizer equalizer(
+        equalizer_app::config::kSampleRateHz,
+        {1000.0f, equalizer_app::config::kSelectedQ, 6.0f},
+        {2000.0f, equalizer_app::config::kSelectedQ, -3.0f});
 
     const auto input = buffer;
     double worstProcessingTimeMs = 0.0;

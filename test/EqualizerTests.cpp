@@ -27,9 +27,11 @@ namespace
  */
 void checkCenterFrequencyGain(float frequencyHz, float gainDb)
 {
-    constexpr std::size_t sampleCount = 48000;
-    constexpr std::size_t blockSize = audioeq::kProcessingBlockSize;
-    constexpr std::size_t settlingSamples = 4800;
+    constexpr std::size_t sampleCount =
+        static_cast<std::size_t>(equalizer_app::config::kSampleRateHz);
+    constexpr std::size_t blockSize =
+        equalizer_app::config::kProcessingBlockSize;
+    constexpr std::size_t settlingSamples = sampleCount / 10;
     constexpr float toleranceDb = 0.1f;
 
     // Generate a test signal with a specific frequency and duration.
@@ -39,10 +41,11 @@ void checkCenterFrequencyGain(float frequencyHz, float gainDb)
     auto output = input;
 
     // Initialize the equalizer
-    audioeq::Equalizer equalizer(
-        testutils::kSampleRateHz,
-        {1000.0f, audioeq::kSelectedQ, frequencyHz == 1000.0f ? gainDb : 0.0f},
-        {2000.0f, audioeq::kSelectedQ, frequencyHz == 2000.0f ? gainDb : 0.0f});
+    audioeq::Equalizer equalizer(equalizer_app::config::kSampleRateHz,
+                                 {1000.0f, equalizer_app::config::kSelectedQ,
+                                  frequencyHz == 1000.0f ? gainDb : 0.0f},
+                                 {2000.0f, equalizer_app::config::kSelectedQ,
+                                  frequencyHz == 2000.0f ? gainDb : 0.0f});
 
     // Process the audio in blocks to simulate real-time processing.
     for (std::size_t offset = 0; offset < sampleCount; offset += blockSize) {
@@ -85,8 +88,10 @@ void checkCenterFrequencyGain(float frequencyHz, float gainDb)
  */
 TEST(EqualizerTest, ZeroGainPreservesInput)
 {
-    constexpr std::size_t sampleCount = 48000;
-    constexpr std::size_t blockSize = audioeq::kProcessingBlockSize;
+    constexpr std::size_t sampleCount =
+        static_cast<std::size_t>(equalizer_app::config::kSampleRateHz);
+    constexpr std::size_t blockSize =
+        equalizer_app::config::kProcessingBlockSize;
     constexpr float toneAmplitude = 0.1f;
     constexpr float gainDb = 0.0f;
     constexpr float sampleTolerance = 1.0e-6f;
@@ -104,9 +109,10 @@ TEST(EqualizerTest, ZeroGainPreservesInput)
     }
 
     // Initialize the equalizer
-    audioeq::Equalizer equalizer(testutils::kSampleRateHz,
-                                 {1000.0f, audioeq::kSelectedQ, gainDb},
-                                 {2000.0f, audioeq::kSelectedQ, gainDb});
+    audioeq::Equalizer equalizer(
+        equalizer_app::config::kSampleRateHz,
+        {1000.0f, equalizer_app::config::kSelectedQ, gainDb},
+        {2000.0f, equalizer_app::config::kSelectedQ, gainDb});
 
     // Process a copy so the original remains available for comparison.
     auto output = input;
