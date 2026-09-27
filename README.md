@@ -104,6 +104,37 @@ make run ARGS="input.raw 3 -2.5 output.raw"
 
 Application builds live in `build/app/`; builds with tests live in `build/tests/`. The `build/` directory is ignored by Git.
 
+## Compile-time configuration
+
+Application settings belong to `equalizer_app::config`; library classes remain
+in `audioeq`, and library gain limits remain in `audioeq::config`.
+
+| File | Settings | Used by |
+| --- | --- | --- |
+| `inc/AudioConfig.hpp` | `kSampleRateHz`, `kProcessingBlockSize`, `kSelectedQ` | Application and regular DSP tests |
+| `lib/audioeq/include/audioeq/Config.hpp` | `audioeq::config::kMinGainDb`, `kMaxGainDb` | Library, CLI validation, and gain-limit tests |
+
+Edit the appropriate header and rebuild the library and all consumers together.
+The library does not include the application configuration. Its existing
+`Equalizer::kMinGainDb` and `kMaxGainDb` names alias the library settings, rather
+than defining a second range.
+
+Test signal generation and equalizer construction use the application's sample
+rate. Regular processing tests use the selected Q and block size; isolation and
+boundary tests use the configured gain limits. One-second response signals and
+0.1-second settling windows are derived from the shared rate.
+
+Test inputs such as +6 dB, silence, and invalid values remain deliberate test
+scenarios, and acceptance tolerances remain independent. Explorations intentionally
+compare candidate Q values and block sizes instead of only the selected settings.
+Changing configuration does not guarantee tests pass: narrower gain limits can
+reject a test scenario, and higher boosts may fail isolation or headroom checks.
+Larger supported gain ranges require numerical validation.
+
+The documented 48 kHz PCM format and Python generator describe the default
+application configuration. If you change the sample rate, also update external
+PCM generation/playback settings; raw PCM files contain no sample-rate metadata.
+
 ## Target-specific CMake settings
 
 The root `CMakeLists.txt` lists application, test, and exploration targets in
@@ -130,7 +161,7 @@ make test
 
 The current GoogleTest case, `EqualizerTest.ZeroGainPreservesInput`, verifies
 that both bands at 0 dB preserve 48,000 generated samples within an absolute
-error of 0.000001. It uses the shared `audioeq::kProcessingBlockSize`
+error of 0.000001. It uses the shared `equalizer_app::config::kProcessingBlockSize`
 (currently 256 samples), including the short final block. Four additional cases verify +6 dB and -6 dB at each band center,
 with the other band at 0 dB and the selected Q = 8. They generate one second of a
 0.1-amplitude tone, skip the first 4,800 samples (0.1 seconds), and compare
@@ -172,7 +203,7 @@ at the unchanged band center; the assignment does not specify this tolerance.
 
 The table reports print-only Q exploration results, not separate regression
 cases for each Q. The four isolation regression tests enforce the limit using
-`audioeq::kSelectedQ`. Zero-gain, center-gain, isolation, and neighboring-frequency
+`equalizer_app::config::kSelectedQ`. Zero-gain, center-gain, isolation, and neighboring-frequency
 tests use the application's shared Q and block-size settings from
 `inc/AudioConfig.hpp` (currently Q = 8 and 256 samples).
 
@@ -252,7 +283,7 @@ Use `make explore-q` or `make explore-latency BUILD_TYPE=Release` to run only
 one exploration. Add `GTEST_COLOR=no` for plain-text output.
 
 The latency exploration compares 256-, 512-, and 1,024-sample blocks using
-`audioeq::kSelectedQ`. It restores its input outside each timed call and reports
+`equalizer_app::config::kSelectedQ`. It restores its input outside each timed call and reports
 one input block's duration plus the maximum observed DSP time over 100 calls.
 This excludes output buffering, conversions, filter delay, and device overhead;
 it is not a full end-to-end latency measurement or a worst-case guarantee.
@@ -314,8 +345,9 @@ Use Release builds for representative latency measurements.
 ### Allowed gain range
 
 Each band accepts gains from **-12 dB to +12 dB**, including both endpoints.
-`audioeq::Equalizer::kMinGainDb` and `kMaxGainDb` define these limits for the
-library and command-line validation. The range bounds the available boost and
+`audioeq::config::kMinGainDb` and `kMaxGainDb` in the library configuration
+define these limits. `Equalizer` exposes aliases used by command-line validation
+and boundary tests. The range bounds the available boost and
 cut and rejects arbitrarily large gain requests. It is a product/API constraint,
 not a guarantee against clipping: clipping depends on the requested gain and
 the input signal's level and frequency content.
@@ -433,7 +465,7 @@ or simultaneous-band behavior.
 ## Processing timing and buffer selection
 
 The application selects **256 samples per block**, shared with the latency test
-through `audioeq::kProcessingBlockSize` in `inc/AudioConfig.hpp`. At 48 kHz,
+through `equalizer_app::config::kProcessingBlockSize` in `inc/AudioConfig.hpp`. At 48 kHz,
 one block represents:
 
 ```text
@@ -586,7 +618,7 @@ Equalizer/
 
 ### Shared selected Q
 
-`audioeq::kSelectedQ` in `inc/AudioConfig.hpp` is the authoritative application
+`equalizer_app::config::kSelectedQ` in `inc/AudioConfig.hpp` is the authoritative application
 Q. The application, selected-band correctness tests, and latency test use it.
 Changing this constant changes the configuration exercised by those tests;
 acceptance tolerances remain independent. The print-only Q exploration retains
