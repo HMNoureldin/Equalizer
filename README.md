@@ -78,7 +78,7 @@ equalizer <input_path> <gain_1kHz> <gain_2kHz> <output_path>
 | `gain_2kHz` | Gain at 2 kHz, in dB |
 | `output_path` | Path intended for the processed raw PCM output |
 
-Both gains must be in **[-12, +12] dB**, inclusive. Positive values boost, negative values attenuate, and `0` leaves the level unchanged.
+Both gains must be in **[-12, +12] dB**, inclusive. Positive values boost, negative values attenuate, and `0` leaves the level unchanged. See [gain limits and clipping](#design-decision-gain-limits-and-clipping) for the rationale and output behavior.
 
 You can also build and run through Make:
 
@@ -277,16 +277,17 @@ its “PASSED” output is not an acceptance verdict for a candidate Q.
 
 ## Additional regression coverage
 
-The suite currently contains **23 GoogleTest cases** across two executables:
-`equalizer_tests` for DSP and timing, and `audio_adapter_tests` for file handling
-and sample conversion. `make test` runs both through CTest.
+The suite currently contains **21 GoogleTest cases** across two executables:
+`equalizer_tests` for DSP and timing, and `pcm_conversion_tests` for
+sample conversion. `make test` runs both through CTest.
 
 | Source | Coverage | Cases |
 | --- | --- | --- |
 | `test/EqualizerTests.cpp` | Zero-gain preservation and four center-gain checks | 5 |
 | `test/EqualizerFrequencyResponseTests.cpp` | Four cross-band isolation checks and two distant-frequency checks | 6 |
+| `test/EqualizerEdgeCaseTests.cpp` | Silence under maximum boost, gain validation, empty buffers, and reset equivalence | 6 |
 | `test/EqualizerLatencyTests.cpp` | Selected block duration plus observed DSP time | 1 |
-| `test/AudioAdapterTests.cpp` | PCM conversion and file handling | 11 |
+| `test/PcmConversionTests.cpp` | Positive/negative clipping and exact full-scale boundaries | 3 |
 
 `test/TestSignalUtils.hpp` and `.cpp` provide signal generation, RMS, and dB
 helpers in `testutils`, with no GoogleTest dependency. Measurement helpers
@@ -296,24 +297,57 @@ The two distant-frequency cases loop over 18 tone/gain combinations in total;
 these combinations are not separately registered GoogleTest cases. Q and
 latency explorations are separate from this regression suite.
 
-The adapter coverage includes:
-
-- PCM conversion: exhaustive round trips for all 65,536 signed 16-bit values,
-  scaling, truncation, clipping, and endpoints.
-- File adapter: independently specified little-endian bytes for all PCM16
-  values, empty/exact/short reads, guard samples around read buffers, incomplete
-  samples, invalid arguments, all opening outcomes, retry after opening failure,
-  same-file protection (including hard and symbolic links), and finalization.
-
-Each file test owns an isolated temporary directory. Link tests skip if the
-filesystem or permissions do not allow link creation. The final buffered-write
-failure test uses Linux `/dev/full` and skips where that facility is unavailable.
-The tests do not require permanent audio fixtures or change user files.
+The PCM conversion cases check clipping at +2.0 and -2.0 and conversion at
+exactly +1.0 and -1.0. These map to the PCM16 endpoints 32767 and -32768.
+The current suite does not include file-adapter tests or exhaustive PCM16
+round-trip checks.
 
 Passing these cases does not establish every possible numeric configuration
 or continuous-spectrum behavior. Robustness at extreme positive Q/frequencies
 near numeric limits, and the complete live latency budget, remain limitations.
 Use Release builds for representative latency measurements.
+
+<a id="design-decision-gain-limits-and-clipping"></a>
+
+## Design decision: gain limits and clipping
+
+### Allowed gain range
+
+Each band accepts gains from **-12 dB to +12 dB**, including both endpoints.
+`audioeq::Equalizer::kMinGainDb` and `kMaxGainDb` define these limits for the
+library and command-line validation. The range bounds the available boost and
+cut and rejects arbitrarily large gain requests. It is a product/API constraint,
+not a guarantee against clipping: clipping depends on the requested gain and
+the input signal's level and frequency content.
+
+### Where clipping happens
+
+The equalizer processes normalized floating-point samples and does not clamp
+its output to `[-1, +1]`. A positive gain can produce values outside this range,
+especially when the input is already close to full scale. Keeping this behavior
+in the DSP library lets another application reduce the level or apply a limiter
+before converting the output.
+
+In this application, `PcmConversion::floatToPcm16()` handles clipping at the
+output conversion boundary:
+
+| Processed sample | PCM16 result |
+| --- | --- |
+| At or above +1.0 | +32767 |
+| At or below -1.0 | -32768 |
+| Between -1.0 and +1.0 | Multiply by 32768 and truncate toward zero |
+
+For inputs satisfying the conversion API's requirement that the sample is not
+NaN, this produces a representable PCM16 value and avoids an out-of-range
+float-to-integer conversion. Positive full scale is handled explicitly because
++32768 cannot be represented by a signed 16-bit integer.
+
+### Practical trade-off
+
+Samples exceeding full scale are **hard-clipped**, which can cause audible
+distortion. The application currently has no limiter or automatic gain
+compensation. Use quieter input or reduce the requested boost to leave
+headroom; staying inside the allowed gain range alone does not prevent clipping.
 
 ## Design decision: why Q = 8
 

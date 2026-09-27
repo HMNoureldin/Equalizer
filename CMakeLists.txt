@@ -41,6 +41,7 @@ if(BUILD_TESTING)
 
     add_executable(equalizer_tests
         test/EqualizerTests.cpp
+        test/EqualizerEdgeCaseTests.cpp
         test/EqualizerFrequencyResponseTests.cpp
         test/EqualizerLatencyTests.cpp
         test/TestSignalUtils.cpp
@@ -64,14 +65,14 @@ if(BUILD_TESTING)
     target_link_libraries(equalizer_latency_exploration
         PRIVATE audioeq::audioeq GTest::gtest_main)
 
-    # File/conversion tests stay separate from the DSP-only test executable.
-    add_executable(audio_adapter_tests
-        test/AudioAdapterTests.cpp src/RawPcmFile.cpp src/PcmConversion.cpp)
-    target_link_libraries(audio_adapter_tests PRIVATE GTest::gtest_main)
-    gtest_discover_tests(audio_adapter_tests)
+    # PCM conversion tests stay separate from the DSP test executable.
+    add_executable(pcm_conversion_tests
+        test/PcmConversionTests.cpp src/PcmConversion.cpp)
+    target_link_libraries(pcm_conversion_tests PRIVATE GTest::gtest_main)
+    gtest_discover_tests(pcm_conversion_tests)
 
     list(APPEND project_targets
-        equalizer_tests audio_adapter_tests
+        equalizer_tests pcm_conversion_tests
         equalizer_q_exploration equalizer_latency_exploration
     )
 endif()

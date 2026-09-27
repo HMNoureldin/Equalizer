@@ -9,8 +9,8 @@
  */
 
 #include "AudioConfig.hpp"
-#include <audioeq/Equalizer.hpp>
 #include "TestSignalUtils.hpp"
+#include <audioeq/Equalizer.hpp>
 
 #include <algorithm>
 #include <chrono>

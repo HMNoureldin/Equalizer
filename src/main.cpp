@@ -6,10 +6,10 @@
 
 #include "AudioConfig.hpp"
 #include "CommandLine.hpp"
-#include <audioeq/Equalizer.hpp>
 #include "Logger.hpp"
 #include "PcmConversion.hpp"
 #include "RawPcmFile.hpp"
+#include <audioeq/Equalizer.hpp>
 
 #include <array>
 #include <cstddef>

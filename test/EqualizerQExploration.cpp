@@ -7,8 +7,8 @@
  * pass/fail isolation requirements.
  */
 
-#include <audioeq/Equalizer.hpp>
 #include "TestSignalUtils.hpp"
+#include <audioeq/Equalizer.hpp>
 
 #include <algorithm>
 #include <cstddef>
