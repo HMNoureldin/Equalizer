@@ -13,10 +13,6 @@
 #include <cmath>
 #include <cstddef>
 #include <iostream>
-#include <limits>
-#include <stdexcept>
-#include <string>
-#include <tuple>
 #include <vector>
 
 namespace
@@ -32,7 +28,7 @@ namespace
 void checkCenterFrequencyGain(float frequencyHz, float gainDb)
 {
     constexpr std::size_t sampleCount = 48000;
-    constexpr std::size_t blockSize = 1024;
+    constexpr std::size_t blockSize = audioeq::kProcessingBlockSize;
     constexpr std::size_t settlingSamples = 4800;
     constexpr float toleranceDb = 0.1f;
 
@@ -90,7 +86,7 @@ void checkCenterFrequencyGain(float frequencyHz, float gainDb)
 TEST(EqualizerTest, ZeroGainPreservesInput)
 {
     constexpr std::size_t sampleCount = 48000;
-    constexpr std::size_t blockSize = 1024;
+    constexpr std::size_t blockSize = audioeq::kProcessingBlockSize;
     constexpr float toneAmplitude = 0.1f;
     constexpr float gainDb = 0.0f;
     constexpr float sampleTolerance = 1.0e-6f;

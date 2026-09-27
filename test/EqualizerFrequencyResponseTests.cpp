@@ -31,7 +31,7 @@ namespace
 float measureBandLeakage(float q, float toneHz, float otherBandGainDb)
 {
     constexpr std::size_t sampleCount = 48000;
-    constexpr std::size_t blockSize = 1024;
+    constexpr std::size_t blockSize = audioeq::kProcessingBlockSize;
     constexpr std::size_t settlingSamples = 4800;
 
     // Generate the tone that should remain unchanged.
@@ -85,7 +85,7 @@ float measureBandLeakage(float q, float toneHz, float otherBandGainDb)
 float measureFrequencyChange(float toneHz, float centerHz, float gainDb)
 {
     constexpr std::size_t sampleCount = 48000;
-    constexpr std::size_t blockSize = 256;
+    constexpr std::size_t blockSize = audioeq::kProcessingBlockSize;
     constexpr std::size_t settlingSamples = 4800;
 
     // Generate the frequency that we want to measure.

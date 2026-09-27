@@ -60,8 +60,10 @@ make run ARGS="input.raw 3 -2.5 output.raw"
 | Command | Action |
 | --- | --- |
 | `make` or `make build` | Build the application without tests |
-| `make build-tests` | Build the application and test executable |
+| `make build-tests` | Build the application and test executables |
 | `make test` | Build and run tests |
+| `make explore` | Run both Q and latency explorations |
+| `make explore-latency` | Run the print-only block-size timing exploration |
 | `make explore-q` | Build and run the print-only Q exploration |
 | `make run` | Build and run the application; supply arguments with `ARGS` |
 | `make clean` | Remove build and generated documentation directories |
@@ -79,8 +81,8 @@ make test
 
 The current GoogleTest case, `EqualizerTest.ZeroGainPreservesInput`, verifies
 that both bands at 0 dB preserve 48,000 generated samples within an absolute
-error of 0.000001. It processes 1,024-sample blocks, including the short final
-block. Four additional cases verify +6 dB and -6 dB at each band center,
+error of 0.000001. It uses the shared `audioeq::kProcessingBlockSize`
+(currently 256 samples), including the short final block. Four additional cases verify +6 dB and -6 dB at each band center,
 with the other band at 0 dB and the selected Q = 8. They generate one second of a
 0.1-amplitude tone, skip the first 4,800 samples (0.1 seconds), and compare
 input/output RMS over the remaining interval. Measured gain must be within
@@ -119,23 +121,13 @@ at the unchanged band center; the assignment does not specify this tolerance.
 | 4 | 0.419606 dB | Yes |
 | 8 | 0.109335 dB | Yes |
 
-The Q=2 test characterizes a rejected baseline by asserting that leakage
-exceeds the limit; its passing does not mean Q=2 meets the requirement.
-The Q=4 and Q=8 comparison tests retain their fixed values and assert that
-all four cases stay below the limit. Zero-gain and gain-accuracy tests use
-the application's selected Q=8.
+The table reports print-only Q exploration results, not separate regression
+cases for each Q. The four isolation regression tests enforce the limit using
+`audioeq::kSelectedQ`. Zero-gain, center-gain, isolation, and neighboring-frequency
+tests use the application's shared Q and block-size settings from
+`inc/AudioConfig.hpp` (currently Q = 8 and 256 samples).
 
-Block-consistency tests compare separate equalizer instances processing the
-same 48,017-sample signal in one call or blocks of 256, 512, and 1,024 samples.
-They use Q=8, +6 dB at 1 kHz, and -3 dB at 2 kHz, preserve state between calls,
-and require sample-by-sample agreement within 0.000001. The signal includes a
-quiet mixed tone, an initial impulse, and a silence interval. Each block size
-has a short final block. These are correctness tests, not timing benchmarks.
-The application uses 256 samples per block (5.33 ms of audio at 48 kHz),
-selected from the Release DSP timing measurements below. The correctness
-comparisons retain all three block sizes.
-
-`make test` builds the GoogleTest executable and runs it through CTest with
+`make test` builds the GoogleTest executables and runs it through CTest with
 detailed, colored GoogleTest output. Nested Make directory messages are hidden.
 Use `make test GTEST_COLOR=no` to disable test colors for plain-text logs. To see GoogleTest output directly, run:
 
@@ -187,28 +179,27 @@ its “PASSED” output is not an acceptance verdict for a candidate Q.
 
 ## Additional regression coverage
 
-The Release suite currently discovers 66 GoogleTest cases across two executables:
+The suite currently contains **23 GoogleTest cases** across two executables:
 `equalizer_tests` for DSP and timing, and `audio_adapter_tests` for file handling
 and sample conversion. `make test` runs both through CTest.
 
-Test source organization:
-- `test/TestSignalUtils.hpp` and `.cpp`: signal generation, RMS, and dB helpers
-  in `testutils`, with no GoogleTest dependency.
-- `test/EqualizerTests.cpp`: general correctness tests and their assertion helpers.
-- `test/EqualizerFrequencyResponseTests.cpp`: cross-band isolation tests and their measurement helper.
-- `test/EqualizerLatencyTests.cpp`: selected-buffer plus observed DSP-time check.
-- `test/AudioAdapterTests.cpp`: PCM conversion and file-handling tests.
+| Source | Coverage | Cases |
+| --- | --- | --- |
+| `test/EqualizerTests.cpp` | Zero-gain preservation and four center-gain checks | 5 |
+| `test/EqualizerFrequencyResponseTests.cpp` | Four cross-band isolation checks and two distant-frequency checks | 6 |
+| `test/EqualizerLatencyTests.cpp` | Selected block duration plus observed DSP time | 1 |
+| `test/AudioAdapterTests.cpp` | PCM conversion and file handling | 11 |
 
-Correctness and timing sources still build into `equalizer_tests`, so existing
-`make test` remains unchanged; the timing suite is now `EqualizerLatency`.
+`test/TestSignalUtils.hpp` and `.cpp` provide signal generation, RMS, and dB
+helpers in `testutils`, with no GoogleTest dependency. Measurement helpers
+specific to frequency-response tests stay beside those tests.
 
+The two distant-frequency cases loop over 18 tone/gain combinations in total;
+these combinations are not separately registered GoogleTest cases. Q and
+latency explorations are separate from this regression suite.
 
-- Simultaneous bands: all four +/-12 dB pairings at both center frequencies,
-  with 0.01-amplitude tones to avoid clipping. A 0.2 dB center-gain tolerance
-  includes the known cross-band contribution; this is a project criterion.
-- Core edge cases: silence under boost, reset matching a fresh instance,
-  invalid constructor parameters and gain updates, rejected updates preserving
-  state, no-op buffers, and absolute gain changes retaining history.
+The adapter coverage includes:
+
 - PCM conversion: exhaustive round trips for all 65,536 signed 16-bit values,
   scaling, truncation, clipping, and endpoints.
 - File adapter: independently specified little-endian bytes for all PCM16
@@ -280,9 +271,8 @@ Q = 8 is the best **tested candidate for cross-band center isolation**, not a
 proof of the best Q for every application. Higher Q can increase ringing,
 settling time, and frequency-dependent delay. These four measurements do not
 establish the response at every neighboring frequency or total system latency.
-Neighboring-frequency results and simultaneous-band regression tests are
-documented elsewhere in this README; the complete latency budget remains
-outstanding.
+The current neighboring-frequency checks are described below. They exercise
+one adjusted band at a time; the complete latency budget remains outstanding.
 
 The 0.1-second interval excluded from RMS measurements is test settling time,
 not an added application buffer or a measured latency. Application settings
@@ -290,38 +280,23 @@ remain Q = 8 and 256 samples per block.
 
 ## Neighboring-frequency validation at Q = 8
 
-The parameterized `SelectedQ/EqualizerNeighborResponse` suite measures 32 combinations:
-eight tones (250, 500, 750, 1,500, 2,500, 3,000, 4,000, 6,000 Hz), either band
-adjusted, and gains of -12/+12 dB. The other band stays at 0 dB. It uses one
-second of 0.1-amplitude audio, 256-sample blocks, and matching RMS measurement
-intervals after skipping the first 0.1 seconds.
+Two cases in `test/EqualizerFrequencyResponseTests.cpp` check distant tones
+using the shared selected Q and block size (currently 8 and 256 samples):
 
-For these checks we define outer-band probes as frequencies at or below
-center/1.5 or at or above center*1.5. They must change by less than 0.5 dB.
-Closer probes are transition-region measurements, checked for finite output
-and headroom but not asserted below 0.5 dB. This is a chosen engineering
-boundary for sampled checks, not a specified assignment bandwidth or a
-measured cutoff. Passing does not mean all frequencies are unchanged.
+| Test in `EqualizerNeighborResponse` | Adjusted band | Probe frequencies (Hz) | Tone/gain combinations |
+| --- | --- | --- | --- |
+| `OneKHzBandDoesNotAffectDistantFrequencies` | 1 kHz | 250, 500, 3,000, 4,000, 6,000 | 10 |
+| `TwoKHzBandDoesNotAffectDistantFrequencies` | 2 kHz | 250, 500, 4,000, 6,000 | 8 |
 
-Maximum absolute changes across boost and cut in the measured run:
+Each probe is measured with +12 dB and -12 dB on the adjusted band while the
+other band stays at 0 dB. Each measurement uses one second of 0.1-amplitude
+audio and matching input/output RMS windows after excluding 4,800 settling
+samples. The absolute change must be less than **0.5 dB**, a project criterion
+rather than an assignment-specified tolerance.
 
-| Probe (Hz) | Adjusting 1 kHz (dB) | Adjusting 2 kHz (dB) |
-| --- | --- | --- |
-| 250 | 0.018 | 0.004 |
-| 500 | 0.110 | 0.018 |
-| 750 | 0.677 (transition) | 0.047 |
-| 1,500 | 0.345 | 0.668 (transition) |
-| 2,500 | 0.056 | 1.053 (transition) |
-| 3,000 | 0.034 | 0.336 |
-| 4,000 | 0.017 | 0.105 |
-| 6,000 | 0.007 | 0.032 |
-
-All 26 outer-band combinations meet the limit; the largest change is 0.345 dB.
-The six transition combinations reach 1.053 dB and would fail a blanket 0.5 dB
-requirement. We retain Q=8 and 256-sample buffers for the documented bandwidth
-interpretation. If those closer frequencies must also stay below 0.5 dB, this
-configuration needs reconsideration. These discrete single-band measurements
-do not establish a continuous-spectrum bound or simultaneous-band behavior.
+These 18 measurements check only the listed frequencies. They do not establish
+a continuous-spectrum bound, the response at closer transition frequencies,
+or simultaneous-band behavior.
 
 ## Processing timing and buffer selection
 
@@ -362,8 +337,6 @@ Among the three tested sizes, 256 has the lowest buffering contribution:
 The observed DSP time of **0.006891 ms** used about **0.13%** of the 5.33333 ms
 block interval, leaving substantial processing headroom in this run. The DSP
 work was much smaller than the buffering contribution even in this Debug build.
-Previous block-consistency checks also found identical output across these
-sizes, so reducing the block size did not change the filtering result.
 
 We therefore choose 256 to reduce buffering delay while retaining measured DSP
 headroom. The trade-off is more frequent processing and adapter calls: about
