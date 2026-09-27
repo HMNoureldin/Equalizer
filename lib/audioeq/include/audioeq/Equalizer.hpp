@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "Biquad.hpp"
+#include <audioeq/Biquad.hpp>
 
 #include <cstddef>
 

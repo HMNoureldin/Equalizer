@@ -5,7 +5,7 @@
  */
 
 #include "CommandLine.hpp"
-#include "Equalizer.hpp"
+#include <audioeq/Equalizer.hpp>
 
 #include <sstream>
 #include <stdexcept>

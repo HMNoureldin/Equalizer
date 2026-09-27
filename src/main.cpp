@@ -6,7 +6,7 @@
 
 #include "AudioConfig.hpp"
 #include "CommandLine.hpp"
-#include "Equalizer.hpp"
+#include <audioeq/Equalizer.hpp>
 #include "Logger.hpp"
 #include "PcmConversion.hpp"
 #include "RawPcmFile.hpp"

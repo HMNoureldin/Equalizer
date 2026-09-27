@@ -7,6 +7,37 @@ A C++17 command-line application for applying gain at **1 kHz** and **2 kHz** to
 
 > **Development status:** Streaming PCM processing, configurable two-band DSP, file output, and automated tests are implemented. The complete end-to-end latency assessment remains outstanding.
 
+## Standalone DSP library
+
+`lib/audioeq` contains only `Equalizer` and `Biquad`, with its own CMake project.
+It requires C++17 and has no dependency on the CLI, file handling, logging,
+GoogleTest, or application settings. Copy this directory into another project
+and integrate it with:
+
+```cmake
+add_subdirectory(path/to/audioeq audioeq-build)
+target_link_libraries(my_application PRIVATE audioeq::audioeq)
+```
+
+Public headers use library-qualified paths:
+
+```cpp
+#include <audioeq/Equalizer.hpp>
+```
+
+The target supplies its include directory and C++17 requirement to consumers.
+To build the library alone, without configuring the application or tests:
+
+```sh
+cmake -S lib/audioeq -B build/core -DCMAKE_BUILD_TYPE=Release
+cmake --build build/core
+```
+
+Application defaults (Q and block size) remain in `inc/AudioConfig.hpp`.
+Processing remains in-place and allocation-free. Invalid construction parameters
+throw exceptions, so embedded integrations must support C++ exceptions with the
+current API. Packaging the library separately does not change that requirement.
+
 ## Audio format
 
 Input and output use headerless signed 16-bit little-endian PCM, mono,
@@ -437,7 +468,10 @@ LOG_DEBUG("Debug logging enabled");
 
 ```text
 Equalizer/
-├── inc/                # C++ headers
+├── lib/audioeq/        # Standalone DSP library and its CMakeLists.txt
+│   ├── include/audioeq/ # Public Equalizer.hpp and Biquad.hpp
+│   └── src/            # DSP implementations
+├── inc/                # Application and adapter headers
 ├── src/                # Application and component implementations
 ├── test/               # Tests
 ├── .clang-format       # Shared formatting rules

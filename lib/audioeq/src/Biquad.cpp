@@ -8,7 +8,7 @@
  * https://webaudio.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
  */
 
-#include "Biquad.hpp"
+#include <audioeq/Biquad.hpp>
 
 #include <cmath>
 #include <stdexcept>

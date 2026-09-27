@@ -4,7 +4,7 @@
  * @brief Tests for the Equalizer application.
  */
 #include "AudioConfig.hpp"
-#include "Equalizer.hpp"
+#include <audioeq/Equalizer.hpp>
 #include "TestSignalUtils.hpp"
 
 #include <algorithm>

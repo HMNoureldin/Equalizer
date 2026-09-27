@@ -1,7 +1,7 @@
 PROJECT_NAME           = Equalizer
 PROJECT_BRIEF          = "Raw PCM equalizer: initial application design"
 OUTPUT_DIRECTORY       = build/docs
-INPUT                  = README.md inc src test
+INPUT                  = README.md inc src test lib/audioeq
 USE_MDFILE_AS_MAINPAGE  = README.md
 FILE_PATTERNS          = *.hpp *.cpp *.md
 RECURSIVE              = YES

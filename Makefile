@@ -6,7 +6,7 @@ ARGS ?=
 CLANG_FORMAT ?= clang-format-18
 DOXYGEN ?= doxygen
 GTEST_COLOR ?= yes
-FORMAT_FILES := $(wildcard inc/*.hpp src/*.cpp test/*.cpp test/*.hpp)
+FORMAT_FILES := $(wildcard inc/*.hpp src/*.cpp test/*.cpp test/*.hpp lib/audioeq/include/audioeq/*.hpp lib/audioeq/src/*.cpp)
 
 .PHONY: build build-tests test explore explore-q explore-latency run clean format format-check docs show-docs help
 

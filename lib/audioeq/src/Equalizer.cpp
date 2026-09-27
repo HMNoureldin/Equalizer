@@ -4,7 +4,7 @@
  * @brief Cascaded peaking filters with bounded band gains.
  */
 
-#include "Equalizer.hpp"
+#include <audioeq/Equalizer.hpp>
 
 #include <cmath>
 #include <stdexcept>

@@ -10,16 +10,8 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# Reusable DSP library, independent of CLI, file I/O, and logging.
-add_library(equalizer_core STATIC
-    src/Biquad.cpp
-    src/Equalizer.cpp
-)
-
-target_include_directories(equalizer_core PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/inc"
-)
-target_compile_features(equalizer_core PUBLIC cxx_std_17)
+# Reusable DSP library, independently buildable from lib/audioeq.
+add_subdirectory(lib/audioeq)
 
 # Application and file adapters depend on the DSP core.
 add_executable(equalizer
@@ -29,7 +21,8 @@ add_executable(equalizer
     src/RawPcmFile.cpp
     src/Logger.cpp
 )
-target_link_libraries(equalizer PRIVATE equalizer_core)
+target_include_directories(equalizer PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/inc")
+target_link_libraries(equalizer PRIVATE audioeq::audioeq)
 
 # Tests (disable with -DBUILD_TESTING=OFF).
 include(CTest)
@@ -60,7 +53,8 @@ if(BUILD_TESTING)
         test/EqualizerLatencyTests.cpp
         test/TestSignalUtils.cpp
     )
-    target_link_libraries(equalizer_tests PRIVATE equalizer_core GTest::gtest_main)
+    target_include_directories(equalizer_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/inc")
+    target_link_libraries(equalizer_tests PRIVATE audioeq::audioeq GTest::gtest_main)
     include(GoogleTest)
     gtest_discover_tests(equalizer_tests)
 
@@ -69,15 +63,17 @@ if(BUILD_TESTING)
         test/EqualizerQExploration.cpp
         test/TestSignalUtils.cpp
     )
+    target_include_directories(equalizer_q_exploration PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/inc")
     target_link_libraries(equalizer_q_exploration
-        PRIVATE equalizer_core GTest::gtest_main)
+        PRIVATE audioeq::audioeq GTest::gtest_main)
 
     add_executable(equalizer_latency_exploration EXCLUDE_FROM_ALL
         test/EqualizerLatencyExploration.cpp
         test/TestSignalUtils.cpp
     )
+    target_include_directories(equalizer_latency_exploration PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/inc")
     target_link_libraries(equalizer_latency_exploration
-        PRIVATE equalizer_core GTest::gtest_main)
+        PRIVATE audioeq::audioeq GTest::gtest_main)
 
     # File/conversion tests stay separate from the DSP-only test executable.
     add_executable(audio_adapter_tests
