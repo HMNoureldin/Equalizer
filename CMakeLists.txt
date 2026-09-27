@@ -10,7 +10,7 @@ add_executable(equalizer
     src/main.cpp
     src/CommandLine.cpp
     src/PcmConversion.cpp
-    src/RawPcm16LeFile.cpp
+    src/RawPcm16File.cpp
     src/Logger.cpp
 )
 set(project_targets equalizer)
@@ -71,8 +71,12 @@ if(BUILD_TESTING)
     target_link_libraries(pcm_conversion_tests PRIVATE GTest::gtest_main)
     gtest_discover_tests(pcm_conversion_tests)
 
+    add_executable(pcm_file_tests test/RawPcm16FileTests.cpp src/RawPcm16File.cpp)
+    target_link_libraries(pcm_file_tests PRIVATE GTest::gtest_main)
+    gtest_discover_tests(pcm_file_tests)
+
     list(APPEND project_targets
-        equalizer_tests pcm_conversion_tests
+        equalizer_tests pcm_conversion_tests pcm_file_tests
         equalizer_q_exploration equalizer_latency_exploration
     )
 endif()

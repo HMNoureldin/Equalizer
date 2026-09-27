@@ -8,7 +8,7 @@
 #include "CommandLine.hpp"
 #include "Logger.hpp"
 #include "PcmConversion.hpp"
-#include "RawPcm16LeFile.hpp"
+#include "RawPcm16File.hpp"
 #include <audioeq/Equalizer.hpp>
 
 #include <array>
@@ -73,26 +73,26 @@ int main(int argc, char* argv[])
         // -------------------------------------------------
         // 3. Open files
         // -------------------------------------------------
-        RawPcm16LeFile pcmFile;
+        RawPcm16File pcmFile;
 
         const auto openResult = pcmFile.open(inputPath, outputPath);
         switch (openResult) {
-            case RawPcm16LeFile::OpenResult::Success:
+            case RawPcm16File::OpenResult::Success:
                 break;
-            case RawPcm16LeFile::OpenResult::AlreadyOpen:
+            case RawPcm16File::OpenResult::AlreadyOpen:
                 LOG_ERROR("Files are already open");
                 return 1;
-            case RawPcm16LeFile::OpenResult::InputOpenFailed:
+            case RawPcm16File::OpenResult::InputOpenFailed:
                 LOG_ERROR("Failed to open input file: " + inputPath);
                 return 1;
-            case RawPcm16LeFile::OpenResult::FileIdentityCheckFailed:
+            case RawPcm16File::OpenResult::FileIdentityCheckFailed:
                 LOG_ERROR("Could not verify that input and "
                           "output differ");
                 return 1;
-            case RawPcm16LeFile::OpenResult::SameFile:
+            case RawPcm16File::OpenResult::SameFile:
                 LOG_ERROR("Input and output refer to the same file");
                 return 1;
-            case RawPcm16LeFile::OpenResult::OutputOpenFailed:
+            case RawPcm16File::OpenResult::OutputOpenFailed:
                 LOG_ERROR("Failed to open output file: " + outputPath);
                 return 1;
         }
@@ -114,16 +114,16 @@ int main(int argc, char* argv[])
             const auto result =
                 pcmFile.read(pcmBuffer.data(), pcmBuffer.size());
             switch (result.status) {
-                case RawPcm16LeFile::ReadStatus::Success:
-                case RawPcm16LeFile::ReadStatus::EndOfFile:
+                case RawPcm16File::ReadStatus::Success:
+                case RawPcm16File::ReadStatus::EndOfFile:
                     break;
-                case RawPcm16LeFile::ReadStatus::InvalidArgument:
+                case RawPcm16File::ReadStatus::InvalidArgument:
                     LOG_ERROR("Invalid PCM read buffer or size");
                     return 1;
-                case RawPcm16LeFile::ReadStatus::IoError:
+                case RawPcm16File::ReadStatus::IoError:
                     LOG_ERROR("Failed to read input file");
                     return 1;
-                case RawPcm16LeFile::ReadStatus::IncompleteSample:
+                case RawPcm16File::ReadStatus::IncompleteSample:
                     LOG_ERROR("Input ends with an incomplete "
                               "16-bit sample");
                     return 1;
@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
                 LOG_ERROR("Failed to write output file");
                 return 1;
             }
-            if (result.status == RawPcm16LeFile::ReadStatus::EndOfFile) {
+            if (result.status == RawPcm16File::ReadStatus::EndOfFile) {
                 break;
             }
         }

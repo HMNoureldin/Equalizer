@@ -40,12 +40,25 @@ current API. Packaging the library separately does not change that requirement.
 
 ## Audio format
 
-The `RawPcm16LeFile` adapter reads and writes headerless signed 16-bit
-little-endian samples. The application interprets this PCM as mono,
-at 48 kHz. Byte order is encoded explicitly, independently of the host.
+The `RawPcm16File` adapter reads and writes headerless signed 16-bit PCM
+in either little-endian or big-endian byte order. Little-endian is the default.
+The command-line application continues to use little-endian, mono PCM at 48 kHz. Byte order is encoded explicitly, independently of the host.
 A final short block of complete samples is processed normally. An odd
 file length (a trailing incomplete sample) is rejected with an error;
 an error can leave a partial output file.
+
+### Selecting file byte order in C++
+
+```cpp
+RawPcm16File littleEndianFile; // Default, used by the current CLI.
+RawPcm16File bigEndianFile(RawPcm16File::ByteOrder::BigEndian);
+```
+
+The constructor option applies to both input and output for that object. It
+is independent of the computer's byte order. Raw PCM contains no header, so
+byte order must be known by the caller; it is not detected automatically.
+The CLI and Python generator retain their little-endian format. No CLI
+byte-order flag or separate input/output byte orders are provided.
 
 ## Requirements
 
@@ -319,9 +332,9 @@ its “PASSED” output is not an acceptance verdict for a candidate Q.
 
 ## Additional regression coverage
 
-The suite currently contains **21 GoogleTest cases** across two executables:
-`equalizer_tests` for DSP and timing, and `pcm_conversion_tests` for
-sample conversion. `make test` runs both through CTest.
+The suite currently contains **24 GoogleTest cases** across three executables:
+`equalizer_tests` for DSP and timing, `pcm_conversion_tests` for sample
+conversion, and `pcm_file_tests` for file byte-order checks. `make test` runs both through CTest.
 
 | Source | Coverage | Cases |
 | --- | --- | --- |
@@ -330,6 +343,7 @@ sample conversion. `make test` runs both through CTest.
 | `test/EqualizerEdgeCaseTests.cpp` | Silence under maximum boost, gain validation, empty buffers, and reset equivalence | 6 |
 | `test/EqualizerLatencyTests.cpp` | Selected block duration plus observed DSP time | 1 |
 | `test/PcmConversionTests.cpp` | Positive/negative clipping and exact full-scale boundaries | 3 |
+| `test/RawPcm16FileTests.cpp` | Default, little-endian, and big-endian decoding/encoding | 3 |
 
 `test/TestSignalUtils.hpp` and `.cpp` provide signal generation, RMS, and dB
 helpers in `testutils`, with no GoogleTest dependency. Measurement helpers
@@ -341,8 +355,10 @@ latency explorations are separate from this regression suite.
 
 The PCM conversion cases check clipping at +2.0 and -2.0 and conversion at
 exactly +1.0 and -1.0. These map to the PCM16 endpoints 32767 and -32768.
-The current suite does not include file-adapter tests or exhaustive PCM16
-round-trip checks.
+File-byte-order tests use explicit byte sequences to check reading and writing
+independently, including zero, positive and negative samples, and both PCM16
+endpoints. Each test uses an isolated temporary directory. Exhaustive PCM16
+round-trip checks and the earlier file-error tests are not part of this suite.
 
 Passing these cases does not establish every possible numeric configuration
 or continuous-spectrum behavior. Robustness at extreme positive Q/frequencies

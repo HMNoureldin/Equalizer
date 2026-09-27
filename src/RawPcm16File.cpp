@@ -4,7 +4,7 @@
  * @brief Stream-based signed 16-bit PCM file handling.
  */
 
-#include "RawPcm16LeFile.hpp"
+#include "RawPcm16File.hpp"
 
 #include <algorithm>
 #include <array>
@@ -36,8 +36,8 @@ bool validSampleCount(std::size_t count)
 }
 } // namespace
 
-RawPcm16LeFile::OpenResult RawPcm16LeFile::open(const std::string& inputPath,
-                                        const std::string& outputPath)
+RawPcm16File::OpenResult RawPcm16File::open(const std::string& inputPath,
+                                            const std::string& outputPath)
 {
     // 1. Preserve any files already owned by this object.
     if (input_.is_open() || output_.is_open()) {
@@ -89,8 +89,8 @@ RawPcm16LeFile::OpenResult RawPcm16LeFile::open(const std::string& inputPath,
     return OpenResult::Success;
 }
 
-RawPcm16LeFile::ReadResult RawPcm16LeFile::read(std::int16_t* samples,
-                                        std::size_t maxSamples)
+RawPcm16File::ReadResult RawPcm16File::read(std::int16_t* samples,
+                                            std::size_t maxSamples)
 {
     if (samples == nullptr || maxSamples == 0 ||
         !validSampleCount(maxSamples)) {
@@ -100,6 +100,9 @@ RawPcm16LeFile::ReadResult RawPcm16LeFile::read(std::int16_t* samples,
         return {0, ReadStatus::IoError};
     }
 
+    const std::size_t lowByteOffset =
+        byteOrder_ == ByteOrder::LittleEndian ? 0 : 1;
+    const std::size_t highByteOffset = 1 - lowByteOffset;
     std::array<unsigned char, kPcmBytes> bytes;
     std::size_t total = 0;
     while (total < maxSamples) {
@@ -109,8 +112,8 @@ RawPcm16LeFile::ReadResult RawPcm16LeFile::read(std::int16_t* samples,
         const auto bytesRead = static_cast<std::size_t>(input_.gcount());
         for (std::size_t i = 0; i < bytesRead / 2; ++i) {
             const std::int32_t value =
-                static_cast<std::int32_t>(bytes[2 * i]) |
-                (static_cast<std::int32_t>(bytes[2 * i + 1]) << 8);
+                static_cast<std::int32_t>(bytes[2 * i + lowByteOffset]) |
+                (static_cast<std::int32_t>(bytes[2 * i + highByteOffset]) << 8);
             // Convert two's-complement bits without
             // out-of-range signed casts.
             samples[total + i] = static_cast<std::int16_t>(
@@ -130,21 +133,26 @@ RawPcm16LeFile::ReadResult RawPcm16LeFile::read(std::int16_t* samples,
     return {total, ReadStatus::Success};
 }
 
-bool RawPcm16LeFile::write(const std::int16_t* samples, std::size_t sampleCount)
+bool RawPcm16File::write(const std::int16_t* samples, std::size_t sampleCount)
 {
     if (!output_.is_open() || samples == nullptr ||
         !validSampleCount(sampleCount)) {
         return false;
     }
 
+    const std::size_t lowByteOffset =
+        byteOrder_ == ByteOrder::LittleEndian ? 0 : 1;
+    const std::size_t highByteOffset = 1 - lowByteOffset;
     std::array<unsigned char, kPcmBytes> bytes;
     std::size_t total = 0;
     while (total < sampleCount) {
         const auto count = std::min(sampleCount - total, bytes.size() / 2);
         for (std::size_t i = 0; i < count; ++i) {
             const auto value = static_cast<std::uint16_t>(samples[total + i]);
-            bytes[2 * i] = static_cast<unsigned char>(value & 0xff);
-            bytes[2 * i + 1] = static_cast<unsigned char>(value >> 8);
+            bytes[2 * i + lowByteOffset] =
+                static_cast<unsigned char>(value & 0xff);
+            bytes[2 * i + highByteOffset] =
+                static_cast<unsigned char>(value >> 8);
         }
         output_.write(reinterpret_cast<const char*>(bytes.data()),
                       static_cast<std::streamsize>(count * 2));
@@ -156,7 +164,7 @@ bool RawPcm16LeFile::write(const std::int16_t* samples, std::size_t sampleCount)
     return output_.good();
 }
 
-bool RawPcm16LeFile::finishOutput()
+bool RawPcm16File::finishOutput()
 {
     if (!output_.is_open()) {
         return false;

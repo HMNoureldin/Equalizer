@@ -13,15 +13,28 @@
 
 /**
  * @brief Read and write headerless signed 16-bit
- * little-endian PCM.
+ * PCM in the selected byte order.
  * @note No sample-rate or channel metadata is stored.
  * Streams close automatically when the object is destroyed.
  */
-class RawPcm16LeFile
+class RawPcm16File
 {
   public:
-    /// Create an object with both streams closed.
-    RawPcm16LeFile() = default;
+    /// Byte order of samples in both input and output files.
+    enum class ByteOrder {
+        LittleEndian, ///< Least significant byte first.
+        BigEndian     ///< Most significant byte first.
+    };
+
+    /**
+     * @brief Create an adapter with both streams closed.
+     * @param byteOrder File byte order, independent of host byte order.
+     * @note Applies to both reading and writing; raw PCM cannot autodetect it.
+     */
+    explicit RawPcm16File(ByteOrder byteOrder = ByteOrder::LittleEndian)
+        : byteOrder_(byteOrder)
+    {
+    }
 
     /// Result of opening the input/output pair.
     enum class OpenResult {
@@ -74,7 +87,7 @@ class RawPcm16LeFile
     };
 
     /**
-     * @brief Decode up to maxSamples little-endian PCM
+     * @brief Decode up to maxSamples PCM
      * samples.
      * @param samples Writable buffer for maxSamples
      * samples.
@@ -93,7 +106,7 @@ class RawPcm16LeFile
                                   std::size_t maxSamples);
 
     /**
-     * @brief Encode samples as little-endian PCM and write
+     * @brief Encode samples in the selected byte order and write
      * them.
      * @param samples Readable buffer of sampleCount
      * samples.
@@ -119,6 +132,8 @@ class RawPcm16LeFile
     [[nodiscard]] bool finishOutput();
 
   private:
+    /// Selected byte order, shared by reading and writing.
+    ByteOrder byteOrder_;
     /// Binary sample input.
     std::ifstream input_;
     /// Buffered binary sample output.
