@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "IPcmFile.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
@@ -17,7 +19,7 @@
  * @note No sample-rate or channel metadata is stored.
  * Streams close automatically when the object is destroyed.
  */
-class RawPcm16File
+class RawPcmSigned16File final : public IPcmFile<std::int16_t>
 {
   public:
     /// Byte order of samples in both input and output files.
@@ -31,21 +33,10 @@ class RawPcm16File
      * @param byteOrder File byte order, independent of host byte order.
      * @note Applies to both reading and writing; raw PCM cannot autodetect it.
      */
-    explicit RawPcm16File(ByteOrder byteOrder = ByteOrder::LittleEndian)
+    explicit RawPcmSigned16File(ByteOrder byteOrder = ByteOrder::LittleEndian)
         : byteOrder_(byteOrder)
     {
     }
-
-    /// Result of opening the input/output pair.
-    enum class OpenResult {
-        Success,                 ///< Both streams opened.
-        AlreadyOpen,             ///< An existing stream is open.
-        InputOpenFailed,         ///< Input could not be opened.
-        FileIdentityCheckFailed, ///< File identity could
-                                 ///< not be checked.
-        SameFile,                ///< Paths identify the same file.
-        OutputOpenFailed         ///< Output could not be opened.
-    };
 
     /**
      * @brief Open input and output after checking file
@@ -62,29 +53,7 @@ class RawPcm16File
      * operation.
      */
     [[nodiscard]] OpenResult open(const std::string& inputPath,
-                                  const std::string& outputPath);
-
-    /// Outcome of a read, independent of the complete
-    /// sample count.
-    enum class ReadStatus {
-        Success,         ///< Requested samples were read.
-        EndOfFile,       ///< Clean EOF; may include a short final
-                         ///< block.
-        InvalidArgument, ///< Invalid buffer or sample
-                         ///< count.
-        IoError,         ///< Input is closed or a read failed.
-        IncompleteSample ///< EOF after an unmatched
-                         ///< trailing byte.
-    };
-
-    /// Complete decoded samples and the reason reading
-    /// stopped.
-    struct ReadResult
-    {
-        std::size_t sampleCount; ///< Complete samples
-                                 ///< placed in the buffer.
-        ReadStatus status;       ///< Read outcome.
-    };
+                                  const std::string& outputPath) override;
 
     /**
      * @brief Decode up to maxSamples PCM
@@ -103,7 +72,7 @@ class RawPcm16File
      * with no per-read allocation.
      */
     [[nodiscard]] ReadResult read(std::int16_t* samples,
-                                  std::size_t maxSamples);
+                                  std::size_t maxSamples) override;
 
     /**
      * @brief Encode samples in the selected byte order and write
@@ -117,7 +86,7 @@ class RawPcm16File
      * disk.
      */
     [[nodiscard]] bool write(const std::int16_t* samples,
-                             std::size_t sampleCount);
+                             std::size_t sampleCount) override;
 
     /**
      * @brief Flush buffered output and close its stream.
@@ -129,7 +98,7 @@ class RawPcm16File
      * cannot report final write errors to the caller.
      * Success does not guarantee durability on power loss.
      */
-    [[nodiscard]] bool finishOutput();
+    [[nodiscard]] bool finishOutput() override;
 
   private:
     /// Selected byte order, shared by reading and writing.
