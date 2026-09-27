@@ -30,16 +30,16 @@ bool Equalizer::changeBandGainDb(Band band, float gainDb)
     }
 
     switch (band) {
-    case Band::First:
-        firstFilter_.configurePeaking(sampleRateHz_, firstBand_.frequencyHz,
-                                      firstBand_.q, gainDb);
-        firstBand_.gainDb = gainDb;
-        return true;
-    case Band::Second:
-        secondFilter_.configurePeaking(sampleRateHz_, secondBand_.frequencyHz,
-                                       secondBand_.q, gainDb);
-        secondBand_.gainDb = gainDb;
-        return true;
+        case Band::First:
+            firstFilter_.configurePeaking(sampleRateHz_, firstBand_.frequencyHz,
+                                          firstBand_.q, gainDb);
+            firstBand_.gainDb = gainDb;
+            return true;
+        case Band::Second:
+            secondFilter_.configurePeaking(
+                sampleRateHz_, secondBand_.frequencyHz, secondBand_.q, gainDb);
+            secondBand_.gainDb = gainDb;
+            return true;
     }
     return false;
 }

@@ -72,24 +72,24 @@ int main(int argc, char* argv[])
 
         const auto openResult = pcmFile.open(inputPath, outputPath);
         switch (openResult) {
-        case RawPcmFile::OpenResult::Success:
-            break;
-        case RawPcmFile::OpenResult::AlreadyOpen:
-            LOG_ERROR("Files are already open");
-            return 1;
-        case RawPcmFile::OpenResult::InputOpenFailed:
-            LOG_ERROR("Failed to open input file: " + inputPath);
-            return 1;
-        case RawPcmFile::OpenResult::FileIdentityCheckFailed:
-            LOG_ERROR("Could not verify that input and "
-                      "output differ");
-            return 1;
-        case RawPcmFile::OpenResult::SameFile:
-            LOG_ERROR("Input and output refer to the same file");
-            return 1;
-        case RawPcmFile::OpenResult::OutputOpenFailed:
-            LOG_ERROR("Failed to open output file: " + outputPath);
-            return 1;
+            case RawPcmFile::OpenResult::Success:
+                break;
+            case RawPcmFile::OpenResult::AlreadyOpen:
+                LOG_ERROR("Files are already open");
+                return 1;
+            case RawPcmFile::OpenResult::InputOpenFailed:
+                LOG_ERROR("Failed to open input file: " + inputPath);
+                return 1;
+            case RawPcmFile::OpenResult::FileIdentityCheckFailed:
+                LOG_ERROR("Could not verify that input and "
+                          "output differ");
+                return 1;
+            case RawPcmFile::OpenResult::SameFile:
+                LOG_ERROR("Input and output refer to the same file");
+                return 1;
+            case RawPcmFile::OpenResult::OutputOpenFailed:
+                LOG_ERROR("Failed to open output file: " + outputPath);
+                return 1;
         }
 
         // -------------------------------------------------
@@ -109,19 +109,19 @@ int main(int argc, char* argv[])
             const auto result =
                 pcmFile.read(pcmBuffer.data(), pcmBuffer.size());
             switch (result.status) {
-            case RawPcmFile::ReadStatus::Success:
-            case RawPcmFile::ReadStatus::EndOfFile:
-                break;
-            case RawPcmFile::ReadStatus::InvalidArgument:
-                LOG_ERROR("Invalid PCM read buffer or size");
-                return 1;
-            case RawPcmFile::ReadStatus::IoError:
-                LOG_ERROR("Failed to read input file");
-                return 1;
-            case RawPcmFile::ReadStatus::IncompleteSample:
-                LOG_ERROR("Input ends with an incomplete "
-                          "16-bit sample");
-                return 1;
+                case RawPcmFile::ReadStatus::Success:
+                case RawPcmFile::ReadStatus::EndOfFile:
+                    break;
+                case RawPcmFile::ReadStatus::InvalidArgument:
+                    LOG_ERROR("Invalid PCM read buffer or size");
+                    return 1;
+                case RawPcmFile::ReadStatus::IoError:
+                    LOG_ERROR("Failed to read input file");
+                    return 1;
+                case RawPcmFile::ReadStatus::IncompleteSample:
+                    LOG_ERROR("Input ends with an incomplete "
+                              "16-bit sample");
+                    return 1;
             }
             const auto samplesRead = result.sampleCount;
             if (samplesRead == 0) {
