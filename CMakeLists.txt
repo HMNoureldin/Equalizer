@@ -2,14 +2,6 @@ cmake_minimum_required(VERSION 3.16)
 
 project(Equalizer VERSION 0.1.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-if(MSVC)
-    add_compile_options(/W4)
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
-
 # Reusable DSP library, independently buildable from lib/audioeq.
 add_subdirectory(lib/audioeq)
 
@@ -21,7 +13,7 @@ add_executable(equalizer
     src/RawPcmFile.cpp
     src/Logger.cpp
 )
-target_include_directories(equalizer PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/inc")
+set(project_targets equalizer)
 target_link_libraries(equalizer PRIVATE audioeq::audioeq)
 
 # Tests (disable with -DBUILD_TESTING=OFF).
@@ -53,7 +45,6 @@ if(BUILD_TESTING)
         test/EqualizerLatencyTests.cpp
         test/TestSignalUtils.cpp
     )
-    target_include_directories(equalizer_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/inc")
     target_link_libraries(equalizer_tests PRIVATE audioeq::audioeq GTest::gtest_main)
     include(GoogleTest)
     gtest_discover_tests(equalizer_tests)
@@ -63,7 +54,6 @@ if(BUILD_TESTING)
         test/EqualizerQExploration.cpp
         test/TestSignalUtils.cpp
     )
-    target_include_directories(equalizer_q_exploration PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/inc")
     target_link_libraries(equalizer_q_exploration
         PRIVATE audioeq::audioeq GTest::gtest_main)
 
@@ -71,15 +61,29 @@ if(BUILD_TESTING)
         test/EqualizerLatencyExploration.cpp
         test/TestSignalUtils.cpp
     )
-    target_include_directories(equalizer_latency_exploration PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/inc")
     target_link_libraries(equalizer_latency_exploration
         PRIVATE audioeq::audioeq GTest::gtest_main)
 
     # File/conversion tests stay separate from the DSP-only test executable.
     add_executable(audio_adapter_tests
         test/AudioAdapterTests.cpp src/RawPcmFile.cpp src/PcmConversion.cpp)
-    target_include_directories(audio_adapter_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/inc")
-    target_compile_features(audio_adapter_tests PRIVATE cxx_std_17)
     target_link_libraries(audio_adapter_tests PRIVATE GTest::gtest_main)
     gtest_discover_tests(audio_adapter_tests)
+
+    list(APPEND project_targets
+        equalizer_tests audio_adapter_tests
+        equalizer_q_exploration equalizer_latency_exploration
+    )
 endif()
+
+# Common settings for our executables only (not GoogleTest).
+foreach(target IN LISTS project_targets)
+    target_include_directories(${target} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/inc")
+    target_compile_features(${target} PRIVATE cxx_std_17)
+    set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+endforeach()

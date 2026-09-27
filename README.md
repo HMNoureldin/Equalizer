@@ -104,6 +104,24 @@ make run ARGS="input.raw 3 -2.5 output.raw"
 
 Application builds live in `build/app/`; builds with tests live in `build/tests/`. The `build/` directory is ignored by Git.
 
+## Target-specific CMake settings
+
+The root `CMakeLists.txt` lists application, test, and exploration targets in
+`project_targets`. One `foreach` loop applies their common settings. It selects
+C++17, disables compiler-specific C++ extensions for that target, and enables
+`/W4` on MSVC or `-Wall -Wextra -Wpedantic` on GCC/Clang.
+
+Warnings use `target_compile_options(... PRIVATE ...)`, so our warning policy
+does not apply to GoogleTest or propagate to another application's targets.
+GoogleTest retains its own compiler settings. No directory-wide warning flags
+or global `CMAKE_CXX_EXTENSIONS` setting are imposed by this project.
+
+The standalone library defines its own target settings in
+`lib/audioeq/CMakeLists.txt`, so it does not depend on the root project. Its
+include directory and C++17 requirement are `PUBLIC`: consumers need both to
+use the headers. Its warning flags are `PRIVATE`, and `CXX_EXTENSIONS OFF`
+controls compilation of the library itself, not consumers.
+
 ## Testing
 
 ```sh

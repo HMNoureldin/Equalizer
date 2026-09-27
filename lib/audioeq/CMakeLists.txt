@@ -14,3 +14,11 @@ target_include_directories(equalizer_core PUBLIC
 )
 target_compile_features(equalizer_core PUBLIC cxx_std_17)
 set_target_properties(equalizer_core PROPERTIES CXX_EXTENSIONS OFF)
+
+# Keep warning policy local, including when built without the root project.
+# Consumers inherit public headers and C++17, but not these warning flags.
+if(MSVC)
+    target_compile_options(equalizer_core PRIVATE /W4)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(equalizer_core PRIVATE -Wall -Wextra -Wpedantic)
+endif()
