@@ -64,6 +64,7 @@ clean:
 	cmake -E rm -rf build/app build/tests build/docs
 
 docs:
+	cmake -E rm -rf build/docs
 	$(DOXYGEN) Doxyfile
 
 show-docs: docs

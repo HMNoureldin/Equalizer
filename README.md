@@ -184,6 +184,10 @@ cmake --build build/core
 
 ## Project organization
 
+See the [sequence diagram](docs/images/sequence-diagram.png) for the processing
+flow and the [class diagram](docs/images/class-diagram.png) for component
+relationships.
+
 | Location | Responsibility |
 | --- | --- |
 | `lib/audioeq/` | Standalone Equalizer and Biquad DSP library |
@@ -212,6 +216,7 @@ make docs          # Requires Doxygen
 make show-docs     # Generate and open HTML documentation on Linux
 ```
 
+Both documentation commands delete old generated documentation before rebuilding.
 Doxygen output is in `build/docs/html/index.html`. Use `make help` for available
 commands. `make clean` removes `build/app`, `build/tests`, and `build/docs`;
 it preserves generated PCM files in `tools/` and standalone builds in `build/core`.
