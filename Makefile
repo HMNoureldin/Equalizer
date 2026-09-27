@@ -5,10 +5,21 @@ JOBS ?= 2
 ARGS ?=
 CLANG_FORMAT ?= clang-format-18
 DOXYGEN ?= doxygen
+PYTHON ?= python3
 GTEST_COLOR ?= yes
 FORMAT_FILES := $(wildcard inc/*.hpp src/*.cpp test/*.cpp test/*.hpp lib/audioeq/include/audioeq/*.hpp lib/audioeq/src/*.cpp)
 
-.PHONY: build build-tests test explore explore-q explore-latency run clean format format-check docs show-docs help
+.PHONY: pcm-1khz pcm-2khz pcm-mixed build build-tests test explore explore-q explore-latency run clean format format-check docs show-docs help
+
+# Generate audio fixtures without building the C++ application.
+pcm-1khz:
+	$(PYTHON) tools/generate_pcm.py --mode 1khz
+
+pcm-2khz:
+	$(PYTHON) tools/generate_pcm.py --mode 2khz
+
+pcm-mixed:
+	$(PYTHON) tools/generate_pcm.py --mode mixed
 
 # Keep builds with and without tests separate.
 build:
@@ -65,6 +76,9 @@ format-check:
 	$(CLANG_FORMAT) --dry-run --Werror $(FORMAT_FILES)
 
 help:
+	@echo "make pcm-1khz     Generate tools/tone_1000hz.pcm"
+	@echo "make pcm-2khz     Generate tools/tone_2000hz.pcm"
+	@echo "make pcm-mixed    Generate tools/mixed_tones.pcm"
 	@echo "make build        Build application without tests (default)"
 	@echo "make build-tests  Build application and tests"
 	@echo "make test         Build and run tests with detailed GoogleTest output"

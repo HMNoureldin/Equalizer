@@ -172,6 +172,55 @@ its SHA-256 hash. The first such build requires network access; the dependency
 is cached under the test build directory. Application-only builds (`make build`)
 do not require GoogleTest.
 
+## Python PCM generator
+
+[`tools/generate_pcm.py`](tools/generate_pcm.py) creates controlled audio inputs
+for testing the complete application, including PCM reading, filtering, and
+writing. It requires Python 3 with no additional packages.
+
+### Generate a signal
+
+With Python 3 installed, run any of these targets from the project root:
+
+| Command | Generated file | Tones |
+| --- | --- | --- |
+| `make pcm-1khz` | `tools/tone_1000hz.pcm` | 1 kHz |
+| `make pcm-2khz` | `tools/tone_2000hz.pcm` | 2 kHz |
+| `make pcm-mixed` | `tools/mixed_tones.pcm` | 250 Hz, 1 kHz, 2 kHz, 6 kHz |
+
+Each file contains five seconds of 48 kHz mono signed 16-bit little-endian
+PCM with no header: 240,000 samples, or 480,000 bytes. Only Python's standard
+library is needed. Override the interpreter with `PYTHON=/path/to/python3`.
+
+The script divides a total amplitude of 0.1 among the selected tones, keeping
+the combined input peak at approximately 10% of full scale and leaving boost
+headroom. Single tones allow direct RMS gain measurements; mixed-tone total
+RMS does not measure the gain of each frequency separately.
+
+### Run Python directly
+
+You can also run the script directly:
+
+```sh
+python3 tools/generate_pcm.py --mode mixed
+python3 tools/generate_pcm.py tools/custom.pcm --mode 2khz
+```
+
+Without an explicit output path, files are placed beside the script regardless
+of the working directory. The default mode is `1khz`. **Existing output files
+are overwritten** when regenerating, so the Make targets can be run repeatedly.
+This also applies to custom output paths. PCM files directly inside `tools/`
+are ignored by Git.
+
+### Process the generated audio
+
+To boost the generated 1 kHz tone by 6 dB:
+
+```sh
+make build BUILD_TYPE=Release
+./build/app/equalizer tools/tone_1000hz.pcm 6 0 tools/output_boost.pcm
+```
+
 ## Run experimental measurements
 
 ```sh
@@ -473,6 +522,7 @@ Equalizer/
 │   └── src/            # DSP implementations
 ├── inc/                # Application and adapter headers
 ├── src/                # Application and component implementations
+├── tools/              # Python PCM generator and generated audio
 ├── test/               # Tests
 ├── .clang-format       # Shared formatting rules
 ├── .gitignore          # Files excluded from Git
