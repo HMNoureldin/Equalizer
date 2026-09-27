@@ -9,7 +9,7 @@ add_subdirectory(lib/audioeq)
 add_executable(equalizer
     src/main.cpp
     src/CommandLine.cpp
-    src/PcmConversion.cpp
+    src/PcmSigned16Conversion.cpp
     src/RawPcmSigned16File.cpp
     src/Logger.cpp
 )
@@ -67,7 +67,7 @@ if(BUILD_TESTING)
 
     # PCM conversion tests stay separate from the DSP test executable.
     add_executable(pcm_conversion_tests
-        test/PcmConversionTests.cpp src/PcmConversion.cpp)
+        test/PcmSigned16ConversionTests.cpp src/PcmSigned16Conversion.cpp)
     target_link_libraries(pcm_conversion_tests PRIVATE GTest::gtest_main)
     gtest_discover_tests(pcm_conversion_tests)
 

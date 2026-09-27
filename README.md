@@ -361,7 +361,7 @@ conversion. `make test` runs both through CTest.
 | `test/EqualizerFrequencyResponseTests.cpp` | Four cross-band isolation checks and two distant-frequency checks | 6 |
 | `test/EqualizerEdgeCaseTests.cpp` | Silence under maximum boost, gain validation, empty buffers, and reset equivalence | 6 |
 | `test/EqualizerLatencyTests.cpp` | Selected block duration plus observed DSP time | 1 |
-| `test/PcmConversionTests.cpp` | Positive/negative clipping and exact full-scale boundaries | 3 |
+| `test/PcmSigned16ConversionTests.cpp` | Positive/negative clipping and exact full-scale boundaries | 3 |
 
 `test/TestSignalUtils.hpp` and `.cpp` provide signal generation, RMS, and dB
 helpers in `testutils`, with no GoogleTest dependency. Measurement helpers
@@ -403,7 +403,12 @@ especially when the input is already close to full scale. Keeping this behavior
 in the DSP library lets another application reduce the level or apply a limiter
 before converting the output.
 
-In this application, `PcmConversion::floatToPcm16()` handles clipping at the
+`PcmSigned16Conversion::toFloat()` normalizes decoded signed PCM16 samples.
+These functions operate on numeric values; byte order belongs to the file
+adapter. Future formats can provide separate converters, such as
+`PcmSigned32Conversion`; only signed PCM16 conversion is implemented today.
+
+In this application, `PcmSigned16Conversion::fromFloat()` handles clipping at the
 output conversion boundary:
 
 | Processed sample | PCM16 result |

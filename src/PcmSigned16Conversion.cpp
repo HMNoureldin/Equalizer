@@ -3,18 +3,18 @@
  * @brief PCM normalization and clipping for audio adapters.
  */
 
-#include "PcmConversion.hpp"
+#include "PcmSigned16Conversion.hpp"
 
 #include <algorithm>
 
-namespace PcmConversion
+namespace PcmSigned16Conversion
 {
-float pcm16ToFloat(std::int16_t sample) noexcept
+float toFloat(std::int16_t sample) noexcept
 {
     return static_cast<float>(sample) / 32768.0f;
 }
 
-std::int16_t floatToPcm16(float sample) noexcept
+std::int16_t fromFloat(float sample) noexcept
 {
     const float clamped = std::clamp(sample, -1.0f, 1.0f);
     if (clamped >= 1.0f) {
@@ -22,4 +22,4 @@ std::int16_t floatToPcm16(float sample) noexcept
     }
     return static_cast<std::int16_t>(clamped * 32768.0f);
 }
-} // namespace PcmConversion
+} // namespace PcmSigned16Conversion

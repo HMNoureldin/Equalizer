@@ -7,7 +7,7 @@
 #include "AudioConfig.hpp"
 #include "CommandLine.hpp"
 #include "Logger.hpp"
-#include "PcmConversion.hpp"
+#include "PcmSigned16Conversion.hpp"
 #include "RawPcmSigned16File.hpp"
 #include <audioeq/Equalizer.hpp>
 
@@ -136,7 +136,8 @@ int main(int argc, char* argv[])
 
             // PCM -> float
             for (std::size_t i = 0; i < samplesRead; ++i) {
-                processingBuffer[i] = PcmConversion::pcm16ToFloat(pcmBuffer[i]);
+                processingBuffer[i] =
+                    PcmSigned16Conversion::toFloat(pcmBuffer[i]);
             }
 
             // DSP
@@ -144,7 +145,8 @@ int main(int argc, char* argv[])
 
             // float -> PCM
             for (std::size_t i = 0; i < samplesRead; ++i) {
-                pcmBuffer[i] = PcmConversion::floatToPcm16(processingBuffer[i]);
+                pcmBuffer[i] =
+                    PcmSigned16Conversion::fromFloat(processingBuffer[i]);
             }
 
             // Write processed block
