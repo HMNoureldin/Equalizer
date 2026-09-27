@@ -53,20 +53,23 @@ TEST(EqualizerLatency, SelectedBlockSizeStaysBelow100Milliseconds)
 
     // Create one representative block containing both EQ frequencies.
     auto buffer = testutils::generateSine(
-        1000.0f, 0.1f, equalizer_app::config::kProcessingBlockSize);
+        equalizer_app::config::kFirstBandFrequencyHz, 0.1f,
+        equalizer_app::config::kProcessingBlockSize);
 
     const auto secondTone = testutils::generateSine(
-        2000.0f, 0.1f, equalizer_app::config::kProcessingBlockSize);
+        equalizer_app::config::kSecondBandFrequencyHz, 0.1f,
+        equalizer_app::config::kProcessingBlockSize);
 
     for (std::size_t i = 0; i < buffer.size(); ++i) {
         buffer[i] += secondTone[i];
     }
 
     // Use representative non-zero settings so both bands do work.
-    audioeq::Equalizer equalizer(
-        equalizer_app::config::kSampleRateHz,
-        {1000.0f, equalizer_app::config::kSelectedQ, 6.0f},
-        {2000.0f, equalizer_app::config::kSelectedQ, -3.0f});
+    audioeq::Equalizer equalizer(equalizer_app::config::kSampleRateHz,
+                                 {equalizer_app::config::kFirstBandFrequencyHz,
+                                  equalizer_app::config::kSelectedQ, 6.0f},
+                                 {equalizer_app::config::kSecondBandFrequencyHz,
+                                  equalizer_app::config::kSelectedQ, -3.0f});
 
     const auto input = buffer;
     double worstProcessingTimeMs = 0.0;

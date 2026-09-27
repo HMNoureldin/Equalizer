@@ -49,19 +49,22 @@ void reportLatency(std::size_t blockSize)
         static_cast<double>(equalizer_app::config::kSampleRateHz) * 1000.0;
 
     // Create a representative signal containing both EQ frequencies.
-    auto buffer = testutils::generateSine(1000.0f, 0.1f, blockSize);
+    auto buffer = testutils::generateSine(
+        equalizer_app::config::kFirstBandFrequencyHz, 0.1f, blockSize);
 
-    const auto secondTone = testutils::generateSine(2000.0f, 0.1f, blockSize);
+    const auto secondTone = testutils::generateSine(
+        equalizer_app::config::kSecondBandFrequencyHz, 0.1f, blockSize);
 
     for (std::size_t i = 0; i < blockSize; ++i) {
         buffer[i] += secondTone[i];
     }
 
     // Use non-zero gains so both EQ bands are active.
-    audioeq::Equalizer equalizer(
-        equalizer_app::config::kSampleRateHz,
-        {1000.0f, equalizer_app::config::kSelectedQ, 6.0f},
-        {2000.0f, equalizer_app::config::kSelectedQ, -3.0f});
+    audioeq::Equalizer equalizer(equalizer_app::config::kSampleRateHz,
+                                 {equalizer_app::config::kFirstBandFrequencyHz,
+                                  equalizer_app::config::kSelectedQ, 6.0f},
+                                 {equalizer_app::config::kSecondBandFrequencyHz,
+                                  equalizer_app::config::kSelectedQ, -3.0f});
 
     const auto input = buffer;
     double worstProcessingTimeMs = 0.0;

@@ -24,11 +24,12 @@ TEST(EqualizerEdgeCases, SilenceRemainsSilent)
                                0.0f);
 
     // Use maximum boost on both EQ bands.
-    audioeq::Equalizer equalizer(equalizer_app::config::kSampleRateHz,
-                                 {1000.0f, equalizer_app::config::kSelectedQ,
-                                  audioeq::Equalizer::kMaxGainDb},
-                                 {2000.0f, equalizer_app::config::kSelectedQ,
-                                  audioeq::Equalizer::kMaxGainDb});
+    audioeq::Equalizer equalizer(
+        equalizer_app::config::kSampleRateHz,
+        {equalizer_app::config::kFirstBandFrequencyHz,
+         equalizer_app::config::kSelectedQ, audioeq::Equalizer::kMaxGainDb},
+        {equalizer_app::config::kSecondBandFrequencyHz,
+         equalizer_app::config::kSelectedQ, audioeq::Equalizer::kMaxGainDb});
 
     // Process the silent block.
     equalizer.process(samples.data(), samples.size());
@@ -53,8 +54,10 @@ TEST(EqualizerEdgeCases, AcceptsMaximumAllowedGains)
         for (const float secondGainDb : gainLimits) {
             EXPECT_NO_THROW(audioeq::Equalizer(
                 equalizer_app::config::kSampleRateHz,
-                {1000.0f, equalizer_app::config::kSelectedQ, firstGainDb},
-                {2000.0f, equalizer_app::config::kSelectedQ, secondGainDb}))
+                {equalizer_app::config::kFirstBandFrequencyHz,
+                 equalizer_app::config::kSelectedQ, firstGainDb},
+                {equalizer_app::config::kSecondBandFrequencyHz,
+                 equalizer_app::config::kSelectedQ, secondGainDb}))
                 << "First band gain: " << firstGainDb
                 << " dB; second band gain: " << secondGainDb << " dB";
         }
@@ -72,18 +75,22 @@ TEST(EqualizerEdgeCases, RejectsGainOutsideAllowedRange)
                                       audioeq::Equalizer::kMaxGainDb + 1.0f};
 
     for (const float gainDb : invalidGains) {
-        EXPECT_THROW(audioeq::Equalizer(
-                         equalizer_app::config::kSampleRateHz,
-                         {1000.0f, equalizer_app::config::kSelectedQ, gainDb},
-                         {2000.0f, equalizer_app::config::kSelectedQ, 0.0f}),
-                     std::invalid_argument)
+        EXPECT_THROW(
+            audioeq::Equalizer(equalizer_app::config::kSampleRateHz,
+                               {equalizer_app::config::kFirstBandFrequencyHz,
+                                equalizer_app::config::kSelectedQ, gainDb},
+                               {equalizer_app::config::kSecondBandFrequencyHz,
+                                equalizer_app::config::kSelectedQ, 0.0f}),
+            std::invalid_argument)
             << "First band gain: " << gainDb << " dB";
 
-        EXPECT_THROW(audioeq::Equalizer(
-                         equalizer_app::config::kSampleRateHz,
-                         {1000.0f, equalizer_app::config::kSelectedQ, 0.0f},
-                         {2000.0f, equalizer_app::config::kSelectedQ, gainDb}),
-                     std::invalid_argument)
+        EXPECT_THROW(
+            audioeq::Equalizer(equalizer_app::config::kSampleRateHz,
+                               {equalizer_app::config::kFirstBandFrequencyHz,
+                                equalizer_app::config::kSelectedQ, 0.0f},
+                               {equalizer_app::config::kSecondBandFrequencyHz,
+                                equalizer_app::config::kSelectedQ, gainDb}),
+            std::invalid_argument)
             << "Second band gain: " << gainDb << " dB";
     }
 }
@@ -94,10 +101,11 @@ TEST(EqualizerEdgeCases, RejectsGainOutsideAllowedRange)
  */
 TEST(EqualizerEdgeCases, EmptyBufferDoesNotChangeData)
 {
-    audioeq::Equalizer equalizer(
-        equalizer_app::config::kSampleRateHz,
-        {1000.0f, equalizer_app::config::kSelectedQ, 6.0f},
-        {2000.0f, equalizer_app::config::kSelectedQ, -6.0f});
+    audioeq::Equalizer equalizer(equalizer_app::config::kSampleRateHz,
+                                 {equalizer_app::config::kFirstBandFrequencyHz,
+                                  equalizer_app::config::kSelectedQ, 6.0f},
+                                 {equalizer_app::config::kSecondBandFrequencyHz,
+                                  equalizer_app::config::kSelectedQ, -6.0f});
 
     float sample = 0.25f;
     equalizer.process(&sample, 0);
@@ -117,18 +125,22 @@ TEST(EqualizerEdgeCases, RejectsInvalidGainValues)
                                   -std::numeric_limits<float>::infinity()};
 
     for (const float gainDb : invalidGains) {
-        EXPECT_THROW(audioeq::Equalizer(
-                         equalizer_app::config::kSampleRateHz,
-                         {1000.0f, equalizer_app::config::kSelectedQ, gainDb},
-                         {2000.0f, equalizer_app::config::kSelectedQ, 0.0f}),
-                     std::invalid_argument)
+        EXPECT_THROW(
+            audioeq::Equalizer(equalizer_app::config::kSampleRateHz,
+                               {equalizer_app::config::kFirstBandFrequencyHz,
+                                equalizer_app::config::kSelectedQ, gainDb},
+                               {equalizer_app::config::kSecondBandFrequencyHz,
+                                equalizer_app::config::kSelectedQ, 0.0f}),
+            std::invalid_argument)
             << "First band gain: " << gainDb;
 
-        EXPECT_THROW(audioeq::Equalizer(
-                         equalizer_app::config::kSampleRateHz,
-                         {1000.0f, equalizer_app::config::kSelectedQ, 0.0f},
-                         {2000.0f, equalizer_app::config::kSelectedQ, gainDb}),
-                     std::invalid_argument)
+        EXPECT_THROW(
+            audioeq::Equalizer(equalizer_app::config::kSampleRateHz,
+                               {equalizer_app::config::kFirstBandFrequencyHz,
+                                equalizer_app::config::kSelectedQ, 0.0f},
+                               {equalizer_app::config::kSecondBandFrequencyHz,
+                                equalizer_app::config::kSelectedQ, gainDb}),
+            std::invalid_argument)
             << "Second band gain: " << gainDb;
     }
 }
@@ -144,9 +156,11 @@ TEST(EqualizerEdgeCases, ResetMatchesFreshEqualizer)
     constexpr std::size_t sampleCount = 1000;
     constexpr float toneAmplitude = 0.1f;
     constexpr audioeq::Equalizer::BandConfig firstBandConfig{
-        1000.0f, equalizer_app::config::kSelectedQ, 6.0f};
+        equalizer_app::config::kFirstBandFrequencyHz,
+        equalizer_app::config::kSelectedQ, 6.0f};
     constexpr audioeq::Equalizer::BandConfig secondBandConfig{
-        2000.0f, equalizer_app::config::kSelectedQ, -6.0f};
+        equalizer_app::config::kSecondBandFrequencyHz,
+        equalizer_app::config::kSelectedQ, -6.0f};
 
     // Accumulate history, then reset the equalizer under test.
     audioeq::Equalizer resetEqualizer(equalizer_app::config::kSampleRateHz,

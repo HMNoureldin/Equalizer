@@ -20,8 +20,8 @@ namespace
  * @brief Measure the unwanted effect of one EQ band on the other band's center.
  *
  * @param q Quality factor shared by both bands.
- * @param toneHz Center frequency that should remain unchanged (1000 or 2000
- * Hz).
+ * @param toneHz Center frequency that should remain unchanged (either
+ * configured band center).
  * @param otherBandGainDb Gain applied to the other band in decibels.
  *
  * @return Measured change of the unchanged tone in decibels.
@@ -43,19 +43,20 @@ float measureBandLeakage(float q, float toneHz, float otherBandGainDb)
     auto output = input;
 
     // Start with both bands at 0 dB.
-    float gain1000Hz = 0.0f;
-    float gain2000Hz = 0.0f;
+    float firstBandGainDb = 0.0f;
+    float secondBandGainDb = 0.0f;
 
     // Apply gain only to the other band.
-    if (toneHz == 1000.0f) {
-        gain2000Hz = otherBandGainDb;
+    if (toneHz == equalizer_app::config::kFirstBandFrequencyHz) {
+        secondBandGainDb = otherBandGainDb;
     } else {
-        gain1000Hz = otherBandGainDb;
+        firstBandGainDb = otherBandGainDb;
     }
 
-    audioeq::Equalizer equalizer(equalizer_app::config::kSampleRateHz,
-                                 {1000.0f, q, gain1000Hz},
-                                 {2000.0f, q, gain2000Hz});
+    audioeq::Equalizer equalizer(
+        equalizer_app::config::kSampleRateHz,
+        {equalizer_app::config::kFirstBandFrequencyHz, q, firstBandGainDb},
+        {equalizer_app::config::kSecondBandFrequencyHz, q, secondBandGainDb});
 
     // Process the audio in blocks.
     for (std::size_t offset = 0; offset < sampleCount; offset += blockSize) {
@@ -77,7 +78,7 @@ float measureBandLeakage(float q, float toneHz, float otherBandGainDb)
  * @brief Measure how much one EQ band changes another frequency.
  *
  * @param toneHz Frequency of the test tone.
- * @param centerHz EQ band to change (1000 or 2000 Hz).
+ * @param centerHz EQ band to change (either configured band center).
  * @param gainDb Gain applied to the selected band.
  *
  * @return Measured change of the test tone in decibels.
@@ -99,20 +100,22 @@ float measureFrequencyChange(float toneHz, float centerHz, float gainDb)
     auto output = input;
 
     // Start with both bands at 0 dB.
-    float gain1000Hz = 0.0f;
-    float gain2000Hz = 0.0f;
+    float firstBandGainDb = 0.0f;
+    float secondBandGainDb = 0.0f;
 
     // Apply gain only to the selected band.
-    if (centerHz == 1000.0f) {
-        gain1000Hz = gainDb;
+    if (centerHz == equalizer_app::config::kFirstBandFrequencyHz) {
+        firstBandGainDb = gainDb;
     } else {
-        gain2000Hz = gainDb;
+        secondBandGainDb = gainDb;
     }
 
     audioeq::Equalizer equalizer(
         equalizer_app::config::kSampleRateHz,
-        {1000.0f, equalizer_app::config::kSelectedQ, gain1000Hz},
-        {2000.0f, equalizer_app::config::kSelectedQ, gain2000Hz});
+        {equalizer_app::config::kFirstBandFrequencyHz,
+         equalizer_app::config::kSelectedQ, firstBandGainDb},
+        {equalizer_app::config::kSecondBandFrequencyHz,
+         equalizer_app::config::kSelectedQ, secondBandGainDb});
 
     // Process the audio in blocks.
     for (std::size_t offset = 0; offset < sampleCount; offset += blockSize) {
@@ -136,49 +139,53 @@ float measureFrequencyChange(float toneHz, float centerHz, float gainDb)
 // Band isolation tests
 // -----------------------------------------------------------------------------
 
-/// Boosting the 2 kHz band must change the 1 kHz band by less than 0.5 dB.
-TEST(EqualizerIsolation, Boost2kHzDoesNotAffect1kHz)
+/// Boosting the second band must change the first band by less than 0.5 dB.
+TEST(EqualizerIsolation, BoostSecondBandDoesNotAffectFirstBand)
 {
     constexpr float isolationLimitDb = 0.5f;
 
     const float leakageDb =
-        measureBandLeakage(equalizer_app::config::kSelectedQ, 1000.0f,
+        measureBandLeakage(equalizer_app::config::kSelectedQ,
+                           equalizer_app::config::kFirstBandFrequencyHz,
                            audioeq::Equalizer::kMaxGainDb);
 
     EXPECT_LT(std::abs(leakageDb), isolationLimitDb);
 }
 
-/// Cutting the 2 kHz band must change the 1 kHz band by less than 0.5 dB.
-TEST(EqualizerIsolation, Cut2kHzDoesNotAffect1kHz)
+/// Cutting the second band must change the first band by less than 0.5 dB.
+TEST(EqualizerIsolation, CutSecondBandDoesNotAffectFirstBand)
 {
     constexpr float isolationLimitDb = 0.5f;
 
     const float leakageDb =
-        measureBandLeakage(equalizer_app::config::kSelectedQ, 1000.0f,
+        measureBandLeakage(equalizer_app::config::kSelectedQ,
+                           equalizer_app::config::kFirstBandFrequencyHz,
                            audioeq::Equalizer::kMinGainDb);
 
     EXPECT_LT(std::abs(leakageDb), isolationLimitDb);
 }
 
-/// Boosting the 1 kHz band must change the 2 kHz band by less than 0.5 dB.
-TEST(EqualizerIsolation, Boost1kHzDoesNotAffect2kHz)
+/// Boosting the first band must change the second band by less than 0.5 dB.
+TEST(EqualizerIsolation, BoostFirstBandDoesNotAffectSecondBand)
 {
     constexpr float isolationLimitDb = 0.5f;
 
     const float leakageDb =
-        measureBandLeakage(equalizer_app::config::kSelectedQ, 2000.0f,
+        measureBandLeakage(equalizer_app::config::kSelectedQ,
+                           equalizer_app::config::kSecondBandFrequencyHz,
                            audioeq::Equalizer::kMaxGainDb);
 
     EXPECT_LT(std::abs(leakageDb), isolationLimitDb);
 }
 
-/// Cutting the 1 kHz band must change the 2 kHz band by less than 0.5 dB.
-TEST(EqualizerIsolation, Cut1kHzDoesNotAffect2kHz)
+/// Cutting the first band must change the second band by less than 0.5 dB.
+TEST(EqualizerIsolation, CutFirstBandDoesNotAffectSecondBand)
 {
     constexpr float isolationLimitDb = 0.5f;
 
     const float leakageDb =
-        measureBandLeakage(equalizer_app::config::kSelectedQ, 2000.0f,
+        measureBandLeakage(equalizer_app::config::kSelectedQ,
+                           equalizer_app::config::kSecondBandFrequencyHz,
                            audioeq::Equalizer::kMinGainDb);
 
     EXPECT_LT(std::abs(leakageDb), isolationLimitDb);
@@ -189,30 +196,32 @@ TEST(EqualizerIsolation, Cut1kHzDoesNotAffect2kHz)
 // -----------------------------------------------------------------------------
 
 /**
- * @brief Verify that changing the 1 kHz band has little effect on
+ * @brief Verify that changing the first band has little effect on
  *        frequencies far away from it.
  *
  * Each frequency is tested with the maximum boost and maximum cut.
  */
-TEST(EqualizerNeighborResponse, OneKHzBandDoesNotAffectDistantFrequencies)
+TEST(EqualizerNeighborResponse, FirstBandDoesNotAffectDistantFrequencies)
 {
     constexpr float maximumChangeDb = 0.5f;
 
-    // Frequencies away from the 1 kHz band.
+    // Frequencies away from the first band.
     const float frequencies[] = {250.0f, 500.0f, 3000.0f, 4000.0f, 6000.0f};
 
     for (const float frequencyHz : frequencies) {
 
-        // Test a +12 dB boost at 1 kHz.
+        // Test a +12 dB boost at the first band.
         const float boostChangeDb = measureFrequencyChange(
-            frequencyHz, 1000.0f, audioeq::Equalizer::kMaxGainDb);
+            frequencyHz, equalizer_app::config::kFirstBandFrequencyHz,
+            audioeq::Equalizer::kMaxGainDb);
 
         EXPECT_LT(std::abs(boostChangeDb), maximumChangeDb)
             << "Frequency: " << frequencyHz << " Hz";
 
-        // Test a -12 dB cut at 1 kHz.
+        // Test a -12 dB cut at the first band.
         const float cutChangeDb = measureFrequencyChange(
-            frequencyHz, 1000.0f, audioeq::Equalizer::kMinGainDb);
+            frequencyHz, equalizer_app::config::kFirstBandFrequencyHz,
+            audioeq::Equalizer::kMinGainDb);
 
         EXPECT_LT(std::abs(cutChangeDb), maximumChangeDb)
             << "Frequency: " << frequencyHz << " Hz";
@@ -220,30 +229,32 @@ TEST(EqualizerNeighborResponse, OneKHzBandDoesNotAffectDistantFrequencies)
 }
 
 /**
- * @brief Verify that changing the 2 kHz band has little effect on
+ * @brief Verify that changing the second band has little effect on
  *        frequencies far away from it.
  *
  * Each frequency is tested with the maximum boost and maximum cut.
  */
-TEST(EqualizerNeighborResponse, TwoKHzBandDoesNotAffectDistantFrequencies)
+TEST(EqualizerNeighborResponse, SecondBandDoesNotAffectDistantFrequencies)
 {
     constexpr float maximumChangeDb = 0.5f;
 
-    // Frequencies away from the 2 kHz band.
+    // Frequencies away from the second band.
     const float frequencies[] = {250.0f, 500.0f, 4000.0f, 6000.0f};
 
     for (const float frequencyHz : frequencies) {
 
-        // Test a +12 dB boost at 2 kHz.
+        // Test a +12 dB boost at the second band.
         const float boostChangeDb = measureFrequencyChange(
-            frequencyHz, 2000.0f, audioeq::Equalizer::kMaxGainDb);
+            frequencyHz, equalizer_app::config::kSecondBandFrequencyHz,
+            audioeq::Equalizer::kMaxGainDb);
 
         EXPECT_LT(std::abs(boostChangeDb), maximumChangeDb)
             << "Frequency: " << frequencyHz << " Hz";
 
-        // Test a -12 dB cut at 2 kHz.
+        // Test a -12 dB cut at the second band.
         const float cutChangeDb = measureFrequencyChange(
-            frequencyHz, 2000.0f, audioeq::Equalizer::kMinGainDb);
+            frequencyHz, equalizer_app::config::kSecondBandFrequencyHz,
+            audioeq::Equalizer::kMinGainDb);
 
         EXPECT_LT(std::abs(cutChangeDb), maximumChangeDb)
             << "Frequency: " << frequencyHz << " Hz";

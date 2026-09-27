@@ -23,7 +23,8 @@ namespace
  *        center frequency.
  *
  * @param q Quality factor used by both EQ bands.
- * @param toneHz Tone that should remain unchanged (1000 or 2000 Hz).
+ * @param toneHz Tone that should remain unchanged (either configured band
+ * center).
  * @param otherBandGainDb Gain applied to the other EQ band.
  *
  * @return Measured change of the test tone in dB.
@@ -42,20 +43,21 @@ float measureBandLeakage(float q, float toneHz, float otherBandGainDb)
     auto output = input;
 
     // Initially both bands have zero gain.
-    float gain1000Hz = 0.0f;
-    float gain2000Hz = 0.0f;
+    float firstBandGainDb = 0.0f;
+    float secondBandGainDb = 0.0f;
 
     // Apply the requested gain only to the OTHER band.
-    if (toneHz == 1000.0f) {
-        gain2000Hz = otherBandGainDb;
+    if (toneHz == equalizer_app::config::kFirstBandFrequencyHz) {
+        secondBandGainDb = otherBandGainDb;
     } else {
-        gain1000Hz = otherBandGainDb;
+        firstBandGainDb = otherBandGainDb;
     }
 
     // Create the equalizer using the Q value being investigated.
-    audioeq::Equalizer equalizer(equalizer_app::config::kSampleRateHz,
-                                 {1000.0f, q, gain1000Hz},
-                                 {2000.0f, q, gain2000Hz});
+    audioeq::Equalizer equalizer(
+        equalizer_app::config::kSampleRateHz,
+        {equalizer_app::config::kFirstBandFrequencyHz, q, firstBandGainDb},
+        {equalizer_app::config::kSecondBandFrequencyHz, q, secondBandGainDb});
 
     // Process the signal in blocks.
     for (std::size_t offset = 0; offset < sampleCount; offset += blockSize) {
@@ -90,16 +92,39 @@ TEST(EqualizerQExploration, PrintIsolationResults)
 
         std::cout << "\n===== Q = " << q << " =====\n";
 
-        std::cout << "1000 Hz tone, 2000 Hz band +12 dB: "
-                  << measureBandLeakage(q, 1000.0f, 12.0f) << " dB\n";
+        std::cout << equalizer_app::config::kFirstBandFrequencyHz
+                  << " Hz tone, "
+                  << equalizer_app::config::kSecondBandFrequencyHz
+                  << " Hz band +12 dB: "
+                  << measureBandLeakage(
+                         q, equalizer_app::config::kFirstBandFrequencyHz, 12.0f)
+                  << " dB\n";
 
-        std::cout << "1000 Hz tone, 2000 Hz band -12 dB: "
-                  << measureBandLeakage(q, 1000.0f, -12.0f) << " dB\n";
+        std::cout << equalizer_app::config::kFirstBandFrequencyHz
+                  << " Hz tone, "
+                  << equalizer_app::config::kSecondBandFrequencyHz
+                  << " Hz band -12 dB: "
+                  << measureBandLeakage(
+                         q, equalizer_app::config::kFirstBandFrequencyHz,
+                         -12.0f)
+                  << " dB\n";
 
-        std::cout << "2000 Hz tone, 1000 Hz band +12 dB: "
-                  << measureBandLeakage(q, 2000.0f, 12.0f) << " dB\n";
+        std::cout << equalizer_app::config::kSecondBandFrequencyHz
+                  << " Hz tone, "
+                  << equalizer_app::config::kFirstBandFrequencyHz
+                  << " Hz band +12 dB: "
+                  << measureBandLeakage(
+                         q, equalizer_app::config::kSecondBandFrequencyHz,
+                         12.0f)
+                  << " dB\n";
 
-        std::cout << "2000 Hz tone, 1000 Hz band -12 dB: "
-                  << measureBandLeakage(q, 2000.0f, -12.0f) << " dB\n";
+        std::cout << equalizer_app::config::kSecondBandFrequencyHz
+                  << " Hz tone, "
+                  << equalizer_app::config::kFirstBandFrequencyHz
+                  << " Hz band -12 dB: "
+                  << measureBandLeakage(
+                         q, equalizer_app::config::kSecondBandFrequencyHz,
+                         -12.0f)
+                  << " dB\n";
     }
 }

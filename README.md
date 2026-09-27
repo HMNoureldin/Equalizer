@@ -68,14 +68,14 @@ The application validates arguments, processes the input in 256-sample blocks, a
 ## Usage
 
 ```text
-equalizer <input_path> <gain_1kHz> <gain_2kHz> <output_path>
+equalizer <input_path> <gain_first_band> <gain_second_band> <output_path>
 ```
 
 | Argument | Description |
 | --- | --- |
 | `input_path` | Path to the raw PCM input file |
-| `gain_1kHz` | Gain at 1 kHz, in dB |
-| `gain_2kHz` | Gain at 2 kHz, in dB |
+| `gain_first_band` | First band gain, in dB (default center: 1 kHz) |
+| `gain_second_band` | Second band gain, in dB (default center: 2 kHz) |
 | `output_path` | Path intended for the processed raw PCM output |
 
 Both gains must be in **[-12, +12] dB**, inclusive. Positive values boost, negative values attenuate, and `0` leaves the level unchanged. See [gain limits and clipping](#design-decision-gain-limits-and-clipping) for the rationale and output behavior.
@@ -106,12 +106,22 @@ Application builds live in `build/app/`; builds with tests live in `build/tests/
 
 ## Compile-time configuration
 
+Band centers default to 1 kHz and 2 kHz and are defined in `AudioConfig.hpp`.
+The application, center-gain tests, isolation tests, and explorations use these
+constants. CLI argument order remains input, first-band gain, second-band gain,
+output; usage messages and logs display the configured frequencies. The library
+validates band centers against the sample rate during construction.
+
+Fixed distant-frequency probes and the Python generator modes remain deliberate
+test signals. Review probe choices if changing centers; historical measurements
+below describe the default 1 kHz/2 kHz configuration.
+
 Application settings belong to `equalizer_app::config`; library classes remain
 in `audioeq`, and library gain limits remain in `audioeq::config`.
 
 | File | Settings | Used by |
 | --- | --- | --- |
-| `inc/AudioConfig.hpp` | `kSampleRateHz`, `kProcessingBlockSize`, `kSelectedQ` | Application and regular DSP tests |
+| `inc/AudioConfig.hpp` | `kSampleRateHz`, `kProcessingBlockSize`, `kSelectedQ`, `kFirstBandFrequencyHz`, `kSecondBandFrequencyHz` | Application and regular DSP tests |
 | `lib/audioeq/include/audioeq/Config.hpp` | `audioeq::config::kMinGainDb`, `kMaxGainDb` | Library, CLI validation, and gain-limit tests |
 
 Edit the appropriate header and rebuild the library and all consumers together.
@@ -449,8 +459,8 @@ using the shared selected Q and block size (currently 8 and 256 samples):
 
 | Test in `EqualizerNeighborResponse` | Adjusted band | Probe frequencies (Hz) | Tone/gain combinations |
 | --- | --- | --- | --- |
-| `OneKHzBandDoesNotAffectDistantFrequencies` | 1 kHz | 250, 500, 3,000, 4,000, 6,000 | 10 |
-| `TwoKHzBandDoesNotAffectDistantFrequencies` | 2 kHz | 250, 500, 4,000, 6,000 | 8 |
+| `FirstBandDoesNotAffectDistantFrequencies` | 1 kHz | 250, 500, 3,000, 4,000, 6,000 | 10 |
+| `SecondBandDoesNotAffectDistantFrequencies` | 2 kHz | 250, 500, 4,000, 6,000 | 8 |
 
 Each probe is measured with +12 dB and -12 dB on the adjusted band while the
 other band stays at 0 dB. Each measurement uses one second of 0.1-amplitude

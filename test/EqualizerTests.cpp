@@ -20,7 +20,8 @@ namespace
 
 /**
  * @brief Check one band's steady-state gain with the other band at 0 dB.
- * @param frequencyHz Center frequency of the band under test (1000 or 2000).
+ * @param frequencyHz Center frequency of the band under test (either configured
+ * band center).
  * @param gainDb Requested gain in decibels.
  * @note Measures identical input/output intervals after 0.1 seconds of
  * settling. The 0.1 dB tolerance is a project test criterion.
@@ -41,11 +42,16 @@ void checkCenterFrequencyGain(float frequencyHz, float gainDb)
     auto output = input;
 
     // Initialize the equalizer
-    audioeq::Equalizer equalizer(equalizer_app::config::kSampleRateHz,
-                                 {1000.0f, equalizer_app::config::kSelectedQ,
-                                  frequencyHz == 1000.0f ? gainDb : 0.0f},
-                                 {2000.0f, equalizer_app::config::kSelectedQ,
-                                  frequencyHz == 2000.0f ? gainDb : 0.0f});
+    audioeq::Equalizer equalizer(
+        equalizer_app::config::kSampleRateHz,
+        {equalizer_app::config::kFirstBandFrequencyHz,
+         equalizer_app::config::kSelectedQ,
+         frequencyHz == equalizer_app::config::kFirstBandFrequencyHz ? gainDb
+                                                                     : 0.0f},
+        {equalizer_app::config::kSecondBandFrequencyHz,
+         equalizer_app::config::kSelectedQ,
+         frequencyHz == equalizer_app::config::kSecondBandFrequencyHz ? gainDb
+                                                                      : 0.0f});
 
     // Process the audio in blocks to simulate real-time processing.
     for (std::size_t offset = 0; offset < sampleCount; offset += blockSize) {
@@ -95,7 +101,9 @@ TEST(EqualizerTest, ZeroGainPreservesInput)
     constexpr float toneAmplitude = 0.1f;
     constexpr float gainDb = 0.0f;
     constexpr float sampleTolerance = 1.0e-6f;
-    constexpr float toneFrequenciesHz[] = {1000.0f, 2000.0f, 250.0f, 6000.0f};
+    constexpr float toneFrequenciesHz[] = {
+        equalizer_app::config::kFirstBandFrequencyHz,
+        equalizer_app::config::kSecondBandFrequencyHz, 250.0f, 6000.0f};
 
     // Mix the two band centers with frequencies outside the bands.
     std::vector<float> input(sampleCount, 0.0f);
@@ -109,10 +117,11 @@ TEST(EqualizerTest, ZeroGainPreservesInput)
     }
 
     // Initialize the equalizer
-    audioeq::Equalizer equalizer(
-        equalizer_app::config::kSampleRateHz,
-        {1000.0f, equalizer_app::config::kSelectedQ, gainDb},
-        {2000.0f, equalizer_app::config::kSelectedQ, gainDb});
+    audioeq::Equalizer equalizer(equalizer_app::config::kSampleRateHz,
+                                 {equalizer_app::config::kFirstBandFrequencyHz,
+                                  equalizer_app::config::kSelectedQ, gainDb},
+                                 {equalizer_app::config::kSecondBandFrequencyHz,
+                                  equalizer_app::config::kSelectedQ, gainDb});
 
     // Process a copy so the original remains available for comparison.
     auto output = input;
@@ -138,25 +147,29 @@ TEST(EqualizerTest, ZeroGainPreservesInput)
 
 // ========================================================================
 /// Verify a +6 dB boost at the first band's center frequency.
-TEST(EqualizerTest, Boost1kHzAppliesRequestedGain)
+TEST(EqualizerTest, BoostFirstBandAppliesRequestedGain)
 {
-    checkCenterFrequencyGain(1000.0f, 6.0f);
+    checkCenterFrequencyGain(equalizer_app::config::kFirstBandFrequencyHz,
+                             6.0f);
 }
 
 /// Verify a -6 dB cut at the first band's center frequency.
-TEST(EqualizerTest, Cut1kHzAppliesRequestedGain)
+TEST(EqualizerTest, CutFirstBandAppliesRequestedGain)
 {
-    checkCenterFrequencyGain(1000.0f, -6.0f);
+    checkCenterFrequencyGain(equalizer_app::config::kFirstBandFrequencyHz,
+                             -6.0f);
 }
 
 /// Verify a +6 dB boost at the second band's center frequency.
-TEST(EqualizerTest, Boost2kHzAppliesRequestedGain)
+TEST(EqualizerTest, BoostSecondBandAppliesRequestedGain)
 {
-    checkCenterFrequencyGain(2000.0f, 6.0f);
+    checkCenterFrequencyGain(equalizer_app::config::kSecondBandFrequencyHz,
+                             6.0f);
 }
 
 /// Verify a -6 dB cut at the second band's center frequency.
-TEST(EqualizerTest, Cut2kHzAppliesRequestedGain)
+TEST(EqualizerTest, CutSecondBandAppliesRequestedGain)
 {
-    checkCenterFrequencyGain(2000.0f, -6.0f);
+    checkCenterFrequencyGain(equalizer_app::config::kSecondBandFrequencyHz,
+                             -6.0f);
 }
