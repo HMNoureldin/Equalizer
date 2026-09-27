@@ -40,7 +40,8 @@ current API. Packaging the library separately does not change that requirement.
 
 ## Audio format
 
-Input and output use headerless signed 16-bit little-endian PCM, mono,
+The `RawPcm16LeFile` adapter reads and writes headerless signed 16-bit
+little-endian samples. The application interprets this PCM as mono,
 at 48 kHz. Byte order is encoded explicitly, independently of the host.
 A final short block of complete samples is processed normally. An odd
 file length (a trailing incomplete sample) is rejected with an error;

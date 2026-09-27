@@ -4,7 +4,7 @@
  * @brief Stream-based signed 16-bit PCM file handling.
  */
 
-#include "RawPcmFile.hpp"
+#include "RawPcm16LeFile.hpp"
 
 #include <algorithm>
 #include <array>
@@ -36,7 +36,7 @@ bool validSampleCount(std::size_t count)
 }
 } // namespace
 
-RawPcmFile::OpenResult RawPcmFile::open(const std::string& inputPath,
+RawPcm16LeFile::OpenResult RawPcm16LeFile::open(const std::string& inputPath,
                                         const std::string& outputPath)
 {
     // 1. Preserve any files already owned by this object.
@@ -89,7 +89,7 @@ RawPcmFile::OpenResult RawPcmFile::open(const std::string& inputPath,
     return OpenResult::Success;
 }
 
-RawPcmFile::ReadResult RawPcmFile::read(std::int16_t* samples,
+RawPcm16LeFile::ReadResult RawPcm16LeFile::read(std::int16_t* samples,
                                         std::size_t maxSamples)
 {
     if (samples == nullptr || maxSamples == 0 ||
@@ -130,7 +130,7 @@ RawPcmFile::ReadResult RawPcmFile::read(std::int16_t* samples,
     return {total, ReadStatus::Success};
 }
 
-bool RawPcmFile::write(const std::int16_t* samples, std::size_t sampleCount)
+bool RawPcm16LeFile::write(const std::int16_t* samples, std::size_t sampleCount)
 {
     if (!output_.is_open() || samples == nullptr ||
         !validSampleCount(sampleCount)) {
@@ -156,7 +156,7 @@ bool RawPcmFile::write(const std::int16_t* samples, std::size_t sampleCount)
     return output_.good();
 }
 
-bool RawPcmFile::finishOutput()
+bool RawPcm16LeFile::finishOutput()
 {
     if (!output_.is_open()) {
         return false;

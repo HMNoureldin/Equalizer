@@ -10,7 +10,7 @@ add_executable(equalizer
     src/main.cpp
     src/CommandLine.cpp
     src/PcmConversion.cpp
-    src/RawPcmFile.cpp
+    src/RawPcm16LeFile.cpp
     src/Logger.cpp
 )
 set(project_targets equalizer)

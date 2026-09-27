@@ -17,11 +17,11 @@
  * @note No sample-rate or channel metadata is stored.
  * Streams close automatically when the object is destroyed.
  */
-class RawPcmFile
+class RawPcm16LeFile
 {
   public:
     /// Create an object with both streams closed.
-    RawPcmFile() = default;
+    RawPcm16LeFile() = default;
 
     /// Result of opening the input/output pair.
     enum class OpenResult {
