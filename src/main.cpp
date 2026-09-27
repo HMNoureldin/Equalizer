@@ -42,13 +42,18 @@ int main(int argc, char* argv[])
         const auto options = CommandLine::parseArguments(argc, argv);
 
         const std::string inputPath = options.inputPath;
-        const double gain1kHz = options.gain1kHz;
-        const double gain2kHz = options.gain2kHz;
+        const float firstBandGainDb = options.firstBandGainDb;
+        const float secondBandGainDb = options.secondBandGainDb;
         const std::string outputPath = options.outputPath;
 
         LOG_DEBUG("Input: " + inputPath);
-        LOG_DEBUG("Gain at 1 kHz: " + std::to_string(gain1kHz) + " dB");
-        LOG_DEBUG("Gain at 2 kHz: " + std::to_string(gain2kHz) + " dB");
+        LOG_DEBUG("First band (" +
+                  std::to_string(equalizer_app::config::kFirstBandFrequencyHz) +
+                  " Hz) gain: " + std::to_string(firstBandGainDb) + " dB");
+        LOG_DEBUG(
+            "Second band (" +
+            std::to_string(equalizer_app::config::kSecondBandFrequencyHz) +
+            " Hz) gain: " + std::to_string(secondBandGainDb) + " dB");
         LOG_DEBUG("Output: " + outputPath);
         LOG_DEBUG("Arguments parsed successfully");
 
@@ -60,10 +65,10 @@ int main(int argc, char* argv[])
         // truncate output.
         audioeq::Equalizer equalizer(
             equalizer_app::config::kSampleRateHz,
-            {1000.0f, equalizer_app::config::kSelectedQ,
-             static_cast<float>(gain1kHz)},
-            {2000.0f, equalizer_app::config::kSelectedQ,
-             static_cast<float>(gain2kHz)});
+            {equalizer_app::config::kFirstBandFrequencyHz,
+             equalizer_app::config::kSelectedQ, firstBandGainDb},
+            {equalizer_app::config::kSecondBandFrequencyHz,
+             equalizer_app::config::kSelectedQ, secondBandGainDb});
 
         // -------------------------------------------------
         // 3. Open files

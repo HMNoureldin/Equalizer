@@ -18,12 +18,12 @@ struct ProgramOptions
 {
     /// Raw PCM input path.
     std::string inputPath;
-    /// Gain at 1 kHz in the core-supported dB range; zero
+    /// First band gain in the core-supported dB range; zero
     /// means unchanged.
-    double gain1kHz;
-    /// Gain at 2 kHz in the core-supported dB range; zero
+    float firstBandGainDb;
+    /// Second band gain in the core-supported dB range; zero
     /// means unchanged.
-    double gain2kHz;
+    float secondBandGainDb;
     /// Intended processed PCM output path.
     std::string outputPath;
 };

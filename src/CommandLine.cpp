@@ -5,6 +5,7 @@
  */
 
 #include "CommandLine.hpp"
+#include "AudioConfig.hpp"
 #include <audioeq/Equalizer.hpp>
 
 #include <sstream>
@@ -37,10 +38,10 @@ std::string gainRangeDescription()
  * @throws std::out_of_range If numeric conversion overflows
  * or underflows.
  */
-double parseGain(const std::string& value)
+float parseGain(const std::string& value)
 {
     std::size_t parsed = 0;
-    const double gain = std::stod(value, &parsed);
+    const float gain = std::stof(value, &parsed);
     if (parsed != value.size() || !(gain >= audioeq::Equalizer::kMinGainDb &&
                                     gain <= audioeq::Equalizer::kMaxGainDb)) {
         throw std::invalid_argument("Gain must be within " +
@@ -53,19 +54,23 @@ double parseGain(const std::string& value)
 ProgramOptions parseArguments(int argc, char* argv[])
 {
     if (argc != 5) {
-        throw std::invalid_argument("Usage: equalizer <input_path> <gain_1kHz> "
-                                    "<gain_2kHz> "
-                                    "<output_path>\n"
-                                    "Gains must be within " +
-                                    gainRangeDescription() +
-                                    "; 0 = unchanged.");
+        throw std::invalid_argument(
+            "Usage: equalizer <input_path> <gain_first_band> "
+            "<gain_second_band> "
+            "<output_path>\n"
+            "Gains must be within " +
+            gainRangeDescription() + "; 0 = unchanged.\nFirst band: " +
+            std::to_string(equalizer_app::config::kFirstBandFrequencyHz) +
+            " Hz; second band: " +
+            std::to_string(equalizer_app::config::kSecondBandFrequencyHz) +
+            " Hz.");
     }
 
-    double gain1kHz;
-    double gain2kHz;
+    float firstBandGainDb;
+    float secondBandGainDb;
     try {
-        gain1kHz = parseGain(argv[2]);
-        gain2kHz = parseGain(argv[3]);
+        firstBandGainDb = parseGain(argv[2]);
+        secondBandGainDb = parseGain(argv[3]);
     } catch (const std::invalid_argument&) {
         throw std::invalid_argument("Invalid gain. Use a number from " +
                                     gainRangeDescription() + ".");
@@ -76,6 +81,6 @@ ProgramOptions parseArguments(int argc, char* argv[])
             gainRangeDescription() + ".");
     }
 
-    return {argv[1], gain1kHz, gain2kHz, argv[4]};
+    return {argv[1], firstBandGainDb, secondBandGainDb, argv[4]};
 }
 } // namespace CommandLine

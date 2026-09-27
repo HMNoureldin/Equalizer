@@ -12,6 +12,10 @@ namespace equalizer_app::config
 inline constexpr float kSampleRateHz = 48000.0f;
 /// Application block size: 5.33 ms of audio at 48 kHz.
 inline constexpr std::size_t kProcessingBlockSize = 256;
+/// First application band center in Hz.
+inline constexpr float kFirstBandFrequencyHz = 1000.0f;
+/// Second application band center in Hz.
+inline constexpr float kSecondBandFrequencyHz = 2000.0f;
 /// Selected band quality factor; checked by isolation and response tests.
 inline constexpr float kSelectedQ = 8.0f;
 static_assert(kSampleRateHz > 0.0f &&
